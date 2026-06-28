@@ -1,0 +1,31 @@
+node_modules/
+dist/
+.next/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.tsbuildinfo
+.cache/
+
+# Rust / Tauri
+target/
+apps/desktop/src-tauri/target/
+
+# Prisma
+packages/db/generated/
+
+# Build artifacts (regenerated from source)
+apps/web/out/
+apps/desktop/resources/api/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store

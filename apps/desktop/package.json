@@ -1,0 +1,9 @@
+{
+  "name": "@lifeos/desktop",
+  "private": true,
+  "scripts": {
+    "dev": "cargo tauri dev",
+    "build": "cargo tauri build",
+    "icon": "cargo tauri icon"
+  }
+}

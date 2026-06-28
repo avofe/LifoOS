@@ -1,0 +1,23 @@
+{
+  "name": "lifeos",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm run dev --filter @lifeos/api --filter @lifeos/web",
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint",
+    "db:generate": "pnpm --filter @lifeos/db run db:generate",
+    "db:push": "pnpm --filter @lifeos/db run db:push",
+    "db:migrate": "pnpm --filter @lifeos/db run db:migrate",
+    "db:studio": "pnpm --filter @lifeos/db run db:studio",
+    "desktop:dev": "pnpm run dev --filter @lifeos/api & pnpm --filter @lifeos/desktop dev",
+    "desktop:build": "pnpm --filter @lifeos/web build && powershell -NoProfile -File scripts/bundle-api.ps1 -Clean && pnpm --filter @lifeos/desktop build",
+    "desktop:bundle-api": "powershell -NoProfile -File scripts/bundle-api.ps1"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=10"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@prisma/client", "@prisma/engines", "prisma", "esbuild"]
+  }
+}
