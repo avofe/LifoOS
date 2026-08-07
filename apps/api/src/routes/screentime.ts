@@ -16,53 +16,7 @@ const ingestSchema = z.object({
   events: z.array(screenEventSchema).max(5000),
 });
 
-const MOCK = {
-  totalToday: "6ч 42м",
-  weekDays: [
-    { label: "Пн", height: "38%", over: false, today: false },
-    { label: "Вт", height: "60%", over: false, today: false },
-    { label: "Ср", height: "88%", over: true, today: false },
-    { label: "Чт", height: "82%", over: true, today: false },
-    { label: "Пт", height: "93%", over: true, today: false },
-    { label: "Сб", height: "45%", over: false, today: false },
-    { label: "Вс", height: "68%", over: false, today: true },
-  ],
-  apps: [
-    { name: "YouTube", width: "72%", color: "#F07070", time: "2ч 18м" },
-    { name: "VS Code", width: "50%", color: "#7B6FF0", time: "1ч 35м" },
-    { name: "Браузер", width: "35%", color: "#52526A", time: "1ч 08м" },
-    { name: "Telegram", width: "18%", color: "#2AABEE", time: "34м" },
-  ],
-};
-
-const MOCK_ANALYTICS_DAILY = Array.from({ length: 14 }, (_, i) => {
-  const d = new Date();
-  d.setDate(d.getDate() - (13 - i));
-  const dayLabels = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-  return {
-    date: d.toISOString().slice(0, 10),
-    label: dayLabels[d.getDay()],
-    total: Math.round(14400 + Math.random() * 21600),
-    apps: [
-      { name: "YouTube", color: "#F07070", seconds: Math.round(3600 + Math.random() * 7200) },
-      { name: "VS Code", color: "#7B6FF0", seconds: Math.round(1800 + Math.random() * 5400) },
-      { name: "Браузер", color: "#52526A", seconds: Math.round(1200 + Math.random() * 3600) },
-      { name: "Telegram", color: "#2AABEE", seconds: Math.round(600 + Math.random() * 1800) },
-    ],
-  };
-});
-
-const MOCK_ANALYTICS = {
-  daily: MOCK_ANALYTICS_DAILY,
-  topApps: [
-    { name: "YouTube", color: "#F07070", total: 36000 },
-    { name: "VS Code", color: "#7B6FF0", total: 22400 },
-    { name: "Браузер", color: "#52526A", total: 15600 },
-    { name: "Telegram", color: "#2AABEE", total: 8400 },
-  ],
-  weekComparison: { current: 141200, previous: 158400, diffPercent: -11 },
-  todayTotal: 23400,
-};
+const EMPTY_SCREEN_TIME = { totalToday: null, weekDays: [], apps: [] };
 
 export function screentimeRouter(): Router {
   const router = Router();
@@ -75,10 +29,10 @@ export function screentimeRouter(): Router {
         res.status(404).json({ error: "No screen time data for this device" });
         return;
       }
-      res.json(data ?? MOCK);
+      res.json(data ?? EMPTY_SCREEN_TIME);
     } catch (err) {
       console.error("[screentime] GET /", err);
-      res.json(MOCK);
+      res.json(EMPTY_SCREEN_TIME);
     }
   });
 
@@ -100,10 +54,10 @@ export function screentimeRouter(): Router {
         res.status(404).json({ error: "No analytics data for this device" });
         return;
       }
-      res.json(data ?? MOCK_ANALYTICS);
+      res.json(data ?? null);
     } catch (err) {
       console.error("[screentime] GET /analytics", err);
-      res.json(MOCK_ANALYTICS);
+      res.json(null);
     }
   });
 

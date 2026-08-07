@@ -1,3 +1,19 @@
+const DEFAULT_LOCATION = "Volokolamsk";
+
+let location: string | null = null;
+
+export function initWeatherLocation(loc?: string) {
+  location = loc && loc.trim() ? loc.trim() : null;
+}
+
+export function setWeatherLocation(loc?: string) {
+  location = loc && loc.trim() ? loc.trim() : null;
+}
+
+export function getWeatherLocation(): string {
+  return location ?? DEFAULT_LOCATION;
+}
+
 export interface WeatherData {
   condition: string;
   temp: string;
@@ -9,7 +25,7 @@ export interface WeatherData {
 
 export async function fetchWeather(): Promise<WeatherData | null> {
   try {
-    const r = await fetch("https://wttr.in/Volokolamsk?format=j1", {
+    const r = await fetch(`https://wttr.in/${encodeURIComponent(getWeatherLocation())}?format=j1`, {
       signal: AbortSignal.timeout(5000),
     });
     if (!r.ok) return null;

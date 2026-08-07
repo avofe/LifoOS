@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "@lifeos/db";
 import { USER_ID } from "../index";
 import { validate, addChannelSchema } from "../validate";
+import { getYouTubeKey, hasYouTubeKey } from "../lib/youtube";
 
 const YT_API = "https://www.googleapis.com/youtube/v3";
 
@@ -18,7 +19,7 @@ async function getTrackedChannels(): Promise<{ id: string; name: string }[]> {
   return (integ.config as any).channels as { id: string; name: string }[];
 }
 
-export function createYouTubeRouter(apiKey: string): Router {
+export function createYouTubeRouter(): Router {
   const router: Router = Router();
 
   router.get("/videos", async (_req, res) => {
@@ -26,6 +27,12 @@ export function createYouTubeRouter(apiKey: string): Router {
       res.json(cache.data);
       return;
     }
+
+    if (!hasYouTubeKey()) {
+      res.json([]);
+      return;
+    }
+    const apiKey = getYouTubeKey();
 
     try {
       const tracked = await getTrackedChannels();
@@ -168,6 +175,12 @@ export function createYouTubeRouter(apiKey: string): Router {
       res.status(400).json({ error: "Query too short" });
       return;
     }
+
+    if (!hasYouTubeKey()) {
+      res.status(400).json({ error: "YouTube API key not configured" });
+      return;
+    }
+    const apiKey = getYouTubeKey();
 
     try {
       const url = `${YT_API}/search?part=snippet&q=${encodeURIComponent(q)}&type=channel&maxResults=5&key=${apiKey}`;

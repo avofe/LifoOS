@@ -93,7 +93,9 @@ export function AiBrief() {
           <p className="mb-3 text-xs text-zinc-500">
             {type === "morning"
               ? "Утренний брифинг ещё не сгенерирован"
-              : "Вечерний брифинг ещё не сгенерирован"}
+              : type === "evening"
+                ? "Вечерний брифинг ещё не сгенерирован"
+                : "Брифинг ещё не сгенерирован"}
           </p>
           <button
             onClick={generate}
@@ -116,13 +118,13 @@ export function AiBrief() {
             </p>
           )}
 
-          {brief.subscriptions.length > 0 && (
+          {(brief.subscriptions ?? []).length > 0 && (
             <Section label="ПОДПИСКИ">
               {brief.subscriptions.map((s, i) => (
                 <BriefItem
                   key={i}
                   icon="sub"
-                  color={s.status === "critical" ? "red" : "yellow"}
+                  color={s.status === "overdue" || s.status === "critical" ? "red" : "yellow"}
                 >
                   <b>{s.name}</b> — {s.amount}{" "}
                   <span className="text-zinc-400">через {s.daysLeft} дн.</span>
@@ -131,11 +133,19 @@ export function AiBrief() {
             </Section>
           )}
 
-          <Section label={type === "morning" ? "YOUTUBE" : "YOUTUBE"}>
+          <Section label="YOUTUBE">
             <BriefItem icon="yt" color="green">
               {brief.youtube}
             </BriefItem>
           </Section>
+
+          {brief.twitch && (
+            <Section label="TWITCH">
+              <BriefItem icon="tw" color="orange">
+                {brief.twitch}
+              </BriefItem>
+            </Section>
+          )}
 
           <Section label={type === "morning" ? "ЭКРАННОЕ ВРЕМЯ · ВЧЕРА" : "ЭКРАННОЕ ВРЕМЯ · СЕГОДНЯ"}>
             <BriefItem icon="sc" color="green">
@@ -143,7 +153,7 @@ export function AiBrief() {
             </BriefItem>
           </Section>
 
-          {brief.quickActions.length > 0 && (
+          {(brief.quickActions ?? []).length > 0 && (
             <Section label={type === "morning" ? "ПЛАН НА ДЕНЬ" : "НА ЗАВТРА"}>
               <div className="flex flex-wrap gap-1.5">
                 {brief.quickActions.map((a, i) => (
@@ -160,8 +170,8 @@ export function AiBrief() {
       <div className="mt-3.5 rounded-lg border border-zinc-800 bg-surface-2 p-[9px_12px] text-[11.5px] leading-relaxed text-zinc-500">
         💡{" "}
         <span className="font-medium text-accent-light">Как это работает:</span>{" "}
-        Groq (llama-3.3-70b) собирает данные о подписках, YouTube и экранном
-        времени в структурированный брифинг. Утром — с погодой в Волоколамске и
+        Groq (llama-3.3-70b) собирает данные о подписках, YouTube, Twitch и
+        экранном времени в структурированный брифинг. Утром — с погодой и
         прогнозом. Вечером — с анализом дня. Брифинг сохраняется и показывается
         в течение дня.
       </div>

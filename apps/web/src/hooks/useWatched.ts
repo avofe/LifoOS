@@ -8,7 +8,7 @@ const LS_KEY = "yt_watched";
 export function useWatched(): {
   watched: Set<string>;
   markWatched: (id: string) => void;
-  markAllWatched: () => void;
+  markAllWatched: (videoIds: string[]) => void;
   loading: boolean;
 } {
   const [watched, setWatched] = useState<Set<string>>(() => {
@@ -49,17 +49,26 @@ export function useWatched(): {
     });
   }, []);
 
-  const markAllWatched = useCallback(() => {
-    const current = watched;
-    if (current.size === 0) return;
+  const markAllWatched = useCallback((videoIds: string[]) => {
+    if (videoIds.length === 0) return;
 
-    setWatched(new Set());
-    localStorage.removeItem(LS_KEY);
+    const next = new Set(watched);
+    let changed = false;
+    for (const id of videoIds) {
+      if (!next.has(id)) {
+        next.add(id);
+        changed = true;
+      }
+    }
+    if (!changed) return;
+
+    setWatched(next);
+    localStorage.setItem(LS_KEY, JSON.stringify([...next]));
 
     apiFetch("/api/video-state/watched/batch", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ videoIds: [...current] }),
+      body: JSON.stringify({ videoIds }),
       silent: true,
     }).catch(() => {});
   }, [watched]);

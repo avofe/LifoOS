@@ -9,7 +9,7 @@ export function StatsGrid() {
   const [subsStats, setSubsStats] = useState<SubsStats | null>(null);
   const [twitchData, setTwitchData] = useState<TwitchStreamer[]>([]);
   const [screenTime, setScreenTime] = useState<ScreenTimeData | null>(null);
-  const { videos: ytVideos } = useYouTube();
+  const { videos: ytVideos, loading: ytLoading } = useYouTube();
 
   useEffect(() => {
     apiGet<SubsStats>("/api/subscriptions/stats").then(setSubsStats);
@@ -31,8 +31,8 @@ export function StatsGrid() {
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <Stat
         label="Сегодня на экране"
-        value={screenTime ? screenTime.totalToday : "..."}
-        subtitle={screenTime ? screenTime.apps.map((a) => a.name).join(", ") : undefined}
+        value={screenTime ? (screenTime.totalToday ?? "—") : "..."}
+        subtitle={screenTime && screenTime.totalToday ? screenTime.apps.map((a) => a.name).join(", ") : undefined}
       />
       <Stat
         label="Подписки / месяц"
@@ -41,8 +41,8 @@ export function StatsGrid() {
       />
       <Stat
         label="Новый контент"
-        value={String(ytCount || "...")}
-        subtitle={ytCount > 0 ? "новых видео" : undefined}
+        value={ytLoading ? "..." : String(ytCount)}
+        subtitle={ytCount > 0 ? "новых видео" : ytLoading ? undefined : "нет новых видео"}
       />
       <Stat
         label="Twitch"

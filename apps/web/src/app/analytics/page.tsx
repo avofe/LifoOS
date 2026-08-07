@@ -261,6 +261,11 @@ export default function AnalyticsPage() {
                   <div className="mb-3 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500">
                     Топ приложений (14 дней)
                   </div>
+                  {data.topApps.length === 0 ? (
+                    <p className="py-6 text-center text-xs text-zinc-600">
+                      Нет данных по приложениям
+                    </p>
+                  ) : (
                   <div className="flex flex-col gap-3">
                     {(() => {
                       const totalAll = data.topApps.slice(0, 5).reduce((s, a) => s + a.total, 0);
@@ -299,6 +304,7 @@ export default function AnalyticsPage() {
                       );
                     })()}
                   </div>
+                  )}
                 </div>
               </div>
             </>

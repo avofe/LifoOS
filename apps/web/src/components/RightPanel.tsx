@@ -20,7 +20,11 @@ export function RightPanel() {
       .then((data) => {
         if (data) {
           setSubs(data);
-          setTotal(data.reduce((acc, s) => acc + s.cost, 0));
+          const monthly = data.reduce(
+            (acc, s) => acc + (s.billingCycle === "yearly" ? s.cost / 12 : s.cost),
+            0
+          );
+          setTotal(Math.round(monthly));
         }
       });
   }, []);
@@ -198,7 +202,7 @@ export function RightPanel() {
           )}
           {timeline.map((ev, i) => (
             <TimelineRow key={i} time={ev.time} dot={ev.dot}>
-              <span dangerouslySetInnerHTML={{ __html: ev.title }} />
+              <span>{ev.title}</span>
               {ev.description && (
                 <div className="text-[10.5px] text-zinc-500">{ev.description}</div>
               )}

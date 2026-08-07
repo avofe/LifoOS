@@ -5,9 +5,9 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-        mono: ["Space Mono", "monospace"],
-        display: ["Space Grotesk", "sans-serif"],
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        mono: ["var(--font-space-mono)", "monospace"],
+        display: ["var(--font-space-grotesk)", "sans-serif"],
       },
       colors: {
         accent: {

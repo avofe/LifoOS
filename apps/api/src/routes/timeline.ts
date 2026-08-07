@@ -2,13 +2,16 @@ import { Router } from "express";
 import { prisma } from "@lifeos/db";
 import { USER_ID } from "../index";
 import type { TimelineEvent } from "@lifeos/types";
+import { getYouTubeKey, hasYouTubeKey } from "../lib/youtube";
 
 const YT_API = "https://www.googleapis.com/youtube/v3";
-const YOUTUBE_API_KEY = "AIzaSyDeKpue25ScCac-8zITG7854Ktx1N3FQsM";
 const TWITCH_CLIENT_ID = "kimne78kx3ncx6brgo4mv6wki5h1ko";
 
 async function fetchYouTubeVideos(): Promise<TimelineEvent[]> {
   try {
+    if (!hasYouTubeKey()) return [];
+    const apiKey = getYouTubeKey();
+
     const integ = await prisma.integration.findUnique({
       where: { userId_service: { userId: USER_ID, service: "youtube" } },
     });
@@ -22,7 +25,7 @@ async function fetchYouTubeVideos(): Promise<TimelineEvent[]> {
     const results = await Promise.allSettled(
       channels.map(async (ch) => {
         const playlistId = "UU" + ch.id.slice(2);
-        const url = `${YT_API}/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=1&key=${YOUTUBE_API_KEY}`;
+        const url = `${YT_API}/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=1&key=${apiKey}`;
         const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
         if (!r.ok) return [];
         const json: any = await r.json();
@@ -31,7 +34,7 @@ async function fetchYouTubeVideos(): Promise<TimelineEvent[]> {
           .map((i: any) => ({
             time: formatTime(i.snippet.publishedAt),
             type: "youtube" as const,
-            title: `Новое видео · <b>${ch.name}</b>`,
+            title: `Новое видео · ${ch.name}`,
             description: i.snippet.title,
             dot: "accent" as const,
             ts: new Date(i.snippet.publishedAt).getTime(),
@@ -50,8 +53,18 @@ async function fetchYouTubeVideos(): Promise<TimelineEvent[]> {
 
 async function fetchTwitchStreams(): Promise<TimelineEvent[]> {
   try {
+    const integ = await prisma.integration.findUnique({
+      where: { userId_service: { userId: USER_ID, service: "twitch" } },
+    });
+    const streamers: { login: string; name: string }[] =
+      integ?.config && Array.isArray((integ.config as any).streamers)
+        ? (integ.config as any).streamers
+        : [];
+
+    if (streamers.length === 0) return [];
+
     const GQL = `query {
-      users(logins: ["recrent","hibako","simuaz","cu6ickk"]) {
+      users(logins: ${JSON.stringify(streamers.map((s) => s.login))}) {
         id login displayName stream {
           id title game { name } viewers createdAt
         }
@@ -77,7 +90,7 @@ async function fetchTwitchStreams(): Promise<TimelineEvent[]> {
       .map((u: any) => ({
         time: formatTime(u.stream.createdAt),
         type: "twitch" as const,
-        title: `<b>${u.displayName}</b> начал стрим`,
+        title: `${u.displayName} начал стрим`,
         description: `${u.stream.game?.name ?? "??"} · ${u.stream.viewers} зрителей`,
         dot: "green" as const,
         ts: new Date(u.stream.createdAt).getTime(),
@@ -107,7 +120,7 @@ async function fetchSubscriptions(): Promise<TimelineEvent[]> {
         return {
           time: formatTime(s.nextPaymentAt.toISOString()),
           type: "subscription" as const,
-          title: `Напоминание: <b>${s.name}</b> через ${days === 0 ? "сегодня" : `${days} дн.`}`,
+          title: `Напоминание: ${s.name} через ${days === 0 ? "сегодня" : `${days} дн.`}`,
           description: `${Number(s.cost)} ${s.currency}`,
           dot: "orange" as const,
           ts: new Date(s.nextPaymentAt).getTime(),
@@ -138,19 +151,7 @@ export function timelineRouter(): Router {
         fetchSubscriptions(),
       ]);
 
-      const events: TimelineEvent[] = [
-        ...youtube,
-        ...twitch,
-        ...subs,
-        {
-          time: formatTime(new Date().toISOString()),
-          type: "system",
-          title: "AI подготовил утренний брифинг",
-          description: `${youtube.length + twitch.length + subs.length} событий`,
-          dot: "default",
-          ts: Date.now(),
-        },
-      ];
+      const events: TimelineEvent[] = [...youtube, ...twitch, ...subs];
 
       events.sort((a, b) => b.ts - a.ts);
       res.json(events.slice(0, 10));

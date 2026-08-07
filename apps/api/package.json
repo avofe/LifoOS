@@ -9,7 +9,6 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
     "@lifeos/db": "workspace:*",
     "@lifeos/types": "workspace:*",
     "cors": "^2.8.6",

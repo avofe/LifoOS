@@ -77,7 +77,7 @@ export default function YouTubePage() {
             <div className="flex flex-wrap items-center gap-2">
               {!loading && unwatchedCount > 0 && (
                 <button
-                  onClick={markAllWatched}
+                  onClick={() => markAllWatched(videos.map((v) => v.id))}
                   className="rounded-lg border border-zinc-800 bg-surface-2 px-4 py-2 text-sm text-zinc-500 transition hover:text-zinc-200"
                 >
                   Все просмотрено

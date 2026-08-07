@@ -16,9 +16,10 @@ import { createSettingsRouter } from "./routes/settings";
 import { devicesRouter } from "./routes/devices";
 import { requireAccessKey } from "./lib/auth";
 import { initGroq, reinitGroq } from "./lib/gemini";
+import { initYouTube, reinitYouTube } from "./lib/youtube";
+import { initWeatherLocation } from "./lib/weather";
 
 export const USER_ID = "00000000-0000-0000-0000-000000000001";
-const DEFAULT_YOUTUBE_KEY = "AIzaSyDeKpue25ScCac-8zITG7854Ktx1N3FQsM";
 
 const app = express();
 const port = Number(process.env.PORT) || 4000;
@@ -34,7 +35,7 @@ app.get("/api/health", (_req, res) => {
 app.use("/api", requireAccessKey);
 app.use("/api/subscriptions", subscriptionRouter);
 app.use("/api/twitch", createTwitchRouter());
-app.use("/api/youtube", createYouTubeRouter(DEFAULT_YOUTUBE_KEY));
+app.use("/api/youtube", createYouTubeRouter());
 app.use("/api/timeline", timelineRouter());
 app.use("/api/ai", createAiRouter());
 app.use("/api/screentime", screentimeRouter());
@@ -93,7 +94,12 @@ async function seed() {
   }
 }
 
-  seed().then(async () => {
+  seed()
+    .catch((err) => {
+      console.error("Seed failed:", err);
+      process.exit(1);
+    })
+    .then(async () => {
     const ytInteg = await prisma.integration.findUnique({
       where: { userId_service: { userId: USER_ID, service: "youtube" } },
     });
@@ -143,12 +149,39 @@ async function seed() {
       console.log("Groq AI initialized from env");
     }
 
+    const envYoutube = process.env.YOUTUBE_API_KEY ?? "";
+    if (envYoutube) {
+      initYouTube(envYoutube);
+      console.log("YouTube API key loaded from env");
+    }
+
+    const envWeather = process.env.WEATHER_LOCATION ?? "";
+    if (envWeather) {
+      initWeatherLocation(envWeather);
+    }
+
     const dbGroqKey = await prisma.setting.findUnique({
       where: { userId_key: { userId: USER_ID, key: "groqApiKey" } },
     });
     if (dbGroqKey?.value && typeof dbGroqKey.value === "string") {
       reinitGroq(dbGroqKey.value);
       console.log("Groq API key loaded from DB");
+    }
+
+    const dbYoutubeKey = await prisma.setting.findUnique({
+      where: { userId_key: { userId: USER_ID, key: "youtubeApiKey" } },
+    });
+    if (dbYoutubeKey?.value && typeof dbYoutubeKey.value === "string") {
+      reinitYouTube(dbYoutubeKey.value);
+      console.log("YouTube API key loaded from DB");
+    }
+
+    const dbWeather = await prisma.setting.findUnique({
+      where: { userId_key: { userId: USER_ID, key: "weatherLocation" } },
+    });
+    if (dbWeather?.value && typeof dbWeather.value === "string") {
+      initWeatherLocation(dbWeather.value);
+      console.log("Weather location loaded from DB");
     }
 
   app.listen(port, "0.0.0.0", () => {

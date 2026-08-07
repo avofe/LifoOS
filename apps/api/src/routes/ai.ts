@@ -3,7 +3,7 @@ import { prisma } from "@lifeos/db";
 import { USER_ID } from "../index";
 import { queryGroq } from "../lib/gemini";
 import { fetchScreenTime } from "../lib/screentime";
-import { fetchWeather } from "../lib/weather";
+import { fetchWeather, getWeatherLocation } from "../lib/weather";
 import { validate, chatMessageSchema } from "../validate";
 
 async function collectContext() {
@@ -62,6 +62,27 @@ function getBriefType(): "morning" | "evening" {
   return h >= 10 && h < 22 ? "morning" : "evening";
 }
 
+function stripCodeFences(raw: string): string {
+  const m = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  return (m ? m[1] : raw).trim();
+}
+
+async function generateBriefJson(prompt: string, attempts = 2): Promise<any> {
+  let lastErr: Error | null = null;
+
+  for (let i = 0; i < attempts; i++) {
+    const raw = await queryGroq(prompt, { jsonMode: true, maxTokens: 800 });
+    try {
+      return JSON.parse(stripCodeFences(raw));
+    } catch (err: any) {
+      lastErr = err;
+      console.warn(`[ai] brief: invalid JSON from model (attempt ${i + 1})`);
+    }
+  }
+
+  throw new Error(`Модель вернула некорректный JSON: ${lastErr?.message ?? ""}`);
+}
+
 function subLabel(s: { name: string; amount: string; daysLeft: number; status: string }): string {
   if (s.status === "overdue") return `${s.name}: ${s.amount} (ПРОСРОЧЕНА)`;
   if (s.status === "critical") return `${s.name}: ${s.amount}, оплата через ${s.daysLeft} дн. ⚠️`;
@@ -82,6 +103,7 @@ function buildPrompt(ctx: Awaited<ReturnType<typeof collectContext>>, type: "mor
     : "данные собираются";
 
   const statusValues = '"upcoming" | "critical" | "overdue"';
+  const location = getWeatherLocation();
 
   if (type === "morning") {
     return `Данные дашборда LifoOS (утро):
@@ -91,12 +113,12 @@ ${subsStr}
 - YouTube каналы: ${ytStr}
 - Twitch стримеры: ${twStr}
 - Экранное время вчера: ${stStr}
-- Погода в Волоколамске: ${weatherStr}
+- Погода в ${location}: ${weatherStr}
 
 Сформируй утренний брифинг в формате JSON:
 {
   "summary": "приветствие с погодой и прогнозом на день",
-  "weather": "погода сейчас в Волоколамске и прогноз на день",
+  "weather": "погода сейчас в ${location} и прогноз на день",
   "subscriptions": [
     { "name": "Название", "amount": "сумма", "daysLeft": число, "status": ${statusValues} }
   ],
@@ -196,8 +218,7 @@ export function createAiRouter(): Router {
       }
 
       const prompt = buildPrompt(ctx, type, weatherStr);
-      const raw = await queryGroq(prompt, { jsonMode: true, maxTokens: 800 });
-      const brief = JSON.parse(raw);
+      const brief = await generateBriefJson(prompt);
 
       await prisma.briefing.create({
         data: {

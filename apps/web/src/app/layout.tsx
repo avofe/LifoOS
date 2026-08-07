@@ -1,9 +1,29 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, Space_Grotesk, Space_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { AccessKeyModal } from "@/components/AccessKeyModal";
+
+const inter = Inter({
+  subsets: ["latin", "cyrillic"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
+
+const spaceMono = Space_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-space-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "LifeOS",
@@ -23,7 +43,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ru" className="bg-black text-zinc-200">
+    <html
+      lang="ru"
+      className={`${inter.variable} ${spaceGrotesk.variable} ${spaceMono.variable} bg-black text-zinc-200`}
+    >
       <body>
         <div className="flex min-h-screen">
           <Sidebar />

@@ -7,6 +7,7 @@ import type { Device, DeviceType } from "@lifeos/types";
 interface Settings {
   groqApiKey?: string;
   youtubeApiKey?: string;
+  weatherLocation?: string;
 }
 
 interface Streamer {
@@ -31,6 +32,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>({});
   const [groqKey, setGroqKey] = useState("");
   const [youtubeKey, setYoutubeKey] = useState("");
+  const [weatherLocation, setWeatherLocation] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [streamers, setStreamers] = useState<Streamer[]>([]);
@@ -55,6 +57,7 @@ export default function SettingsPage() {
       setSettings(s);
       setGroqKey(s.groqApiKey ?? "");
       setYoutubeKey(s.youtubeApiKey ?? "");
+      setWeatherLocation(s.weatherLocation ?? "");
     }
     setStreamers(st ?? []);
     setDevices(d ?? []);
@@ -73,6 +76,7 @@ export default function SettingsPage() {
         body: JSON.stringify({
           groqApiKey: groqKey || undefined,
           youtubeApiKey: youtubeKey || undefined,
+          weatherLocation: weatherLocation || undefined,
         }),
       });
       setSettings(s);
@@ -227,6 +231,19 @@ export default function SettingsPage() {
               value={youtubeKey}
               onChange={(e) => setYoutubeKey(e.target.value)}
               placeholder="AIzaSy..."
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-accent"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs text-zinc-500">
+              Локация для погоды
+            </label>
+            <input
+              type="text"
+              value={weatherLocation}
+              onChange={(e) => setWeatherLocation(e.target.value)}
+              placeholder="Volokolamsk"
               className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-accent"
             />
           </div>

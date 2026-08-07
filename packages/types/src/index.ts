@@ -67,7 +67,7 @@ export interface AppStat {
 }
 
 export interface ScreenTimeData {
-  totalToday: string;
+  totalToday: string | null;
   weekDays: WeekDay[];
   apps: AppStat[];
 }
@@ -142,11 +142,13 @@ export interface TimelineEvent {
 }
 
 /* ── AI Briefing ── */
+export type BriefSubStatus = "critical" | "upcoming" | "overdue";
+
 export interface BriefSub {
   name: string;
   amount: string;
   daysLeft: number;
-  status: "critical" | "upcoming";
+  status: BriefSubStatus;
 }
 
 export interface BriefData {
@@ -154,6 +156,7 @@ export interface BriefData {
   weather?: string;
   subscriptions: BriefSub[];
   youtube: string;
+  twitch?: string;
   screentime: string;
   quickActions: string[];
 }
