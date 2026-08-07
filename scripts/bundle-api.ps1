@@ -94,9 +94,9 @@ $apiEnvFile = Join-Paths $RepoRoot @("apps", "api", ".env")
 $dbEnvFile = Join-Paths $RepoRoot @("packages", "db", ".env")
 $outEnvFile = Join-Path $OutDir ".env"
 
-$apiContent = Get-Content $apiEnvFile -ErrorAction SilentlyContinue
-$dbContent = Get-Content $dbEnvFile -ErrorAction SilentlyContinue
-$combined = @($apiContent, $dbContent) -join "`r`n"
+$apiContent = @(Get-Content $apiEnvFile -ErrorAction SilentlyContinue)
+$dbContent = @(Get-Content $dbEnvFile -ErrorAction SilentlyContinue)
+$combined = ($apiContent + $dbContent | Where-Object { $_ -and $_.Trim() }) -join "`r`n"
 $combined | Set-Content $outEnvFile -Encoding UTF8
 Write-Host "[bundle-api] .env merged"
 
