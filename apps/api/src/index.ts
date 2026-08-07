@@ -1,6 +1,8 @@
 import "dotenv/config";
 import path from "path";
 import fs from "fs";
+import os from "os";
+import { execSync } from "child_process";
 import cors from "cors";
 import morgan from "morgan";
 import express from "express";
@@ -29,7 +31,34 @@ app.use(express.json());
 app.use(morgan("dev"));
 
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok" });
+  const cpus = os.cpus().length || 1;
+  const load = os.loadavg()[0] ?? 0;
+  const totalMem = os.totalmem();
+  const freeMem = os.freemem();
+  const usedMem = totalMem - freeMem;
+
+  let diskPct: number | null = null;
+  try {
+    const df = execSync("df -k / 2>/dev/null | tail -1", { timeout: 2000 })
+      .toString()
+      .trim()
+      .split(/\s+/);
+    if (df.length >= 5) {
+      const used = Number(df[2]);
+      const avail = Number(df[3]);
+      if (used + avail > 0) diskPct = Math.round((used / (used + avail)) * 100);
+    }
+  } catch {
+    // disk check unavailable
+  }
+
+  res.json({
+    status: "ok",
+    cpu: { load: Math.round(load * 100) / 100, cores: cpus, pct: Math.min(100, Math.round((load / cpus) * 100)) },
+    ram: { usedMb: Math.round(usedMem / 1024 / 1024), totalMb: Math.round(totalMem / 1024 / 1024), pct: Math.round((usedMem / totalMem) * 100) },
+    disk: { pct: diskPct },
+    uptimeSec: Math.round(os.uptime()),
+  });
 });
 
 app.use("/api", requireAccessKey);

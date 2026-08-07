@@ -10,9 +10,15 @@ const MONTHS = [
 
 type ServiceStatus = Record<string, boolean>;
 
+type ServerStats = {
+  cpu: { pct: number };
+  ram: { pct: number };
+} | null;
+
 export function ClockAndStatus() {
   const [time, setTime] = useState("");
   const [status, setStatus] = useState<ServiceStatus | null>(null);
+  const [stats, setStats] = useState<ServerStats>(null);
 
   useEffect(() => {
     function tick() {
@@ -27,6 +33,13 @@ export function ClockAndStatus() {
   useEffect(() => {
     async function check() {
       const apiOk = await fetch("/api/health").then((r) => r.ok).catch(() => false);
+
+      if (apiOk) {
+        const health = await fetch("/api/health").then((r) => r.json()).catch(() => null);
+        if (health && typeof health.cpu?.pct === "number") {
+          setStats({ cpu: { pct: health.cpu.pct }, ram: { pct: health.ram.pct } });
+        }
+      }
 
       const checks = apiOk
         ? await Promise.allSettled([
@@ -79,6 +92,23 @@ export function ClockAndStatus() {
               </div>
             );
           })}
+        {stats && (
+          <div
+            title={`CPU ${stats.cpu.pct}% · RAM ${stats.ram.pct}%`}
+            className="flex items-center gap-1 text-[10.5px] text-zinc-500"
+          >
+            <span
+              className={`h-[5px] w-[5px] rounded-full ${
+                stats.ram.pct >= 90
+                  ? "bg-red-400 shadow-[0_0_4px_#F07070]"
+                  : stats.ram.pct >= 70
+                    ? "bg-amber-400"
+                    : "bg-emerald-400 shadow-[0_0_4px_#3ECF6E]"
+              }`}
+            />
+            <span className="hidden md:inline">CPU {stats.cpu.pct}% · RAM {stats.ram.pct}%</span>
+          </div>
+        )}
       </div>
     </>
   );
