@@ -18,6 +18,8 @@ data class ScreenEvent(
     val title: String?,
 )
 
+class ApiException(val code: Int, message: String) : IOException(message)
+
 object DeviceApi {
     private val json = "application/json; charset=utf-8".toMediaType()
     private val client = OkHttpClient.Builder()
@@ -41,7 +43,7 @@ object DeviceApi {
 
         client.newCall(req).execute().use { resp ->
             val text = resp.body?.string().orEmpty()
-            if (!resp.isSuccessful) throw IOException("HTTP ${resp.code}: ${text.take(200)}")
+            if (!resp.isSuccessful) throw ApiException(resp.code, "HTTP ${resp.code}: ${text.take(200)}")
             val j = JSONObject(text)
             return RegisterResult(j.getString("id"), j.getString("name"), j.getString("token"))
         }
@@ -67,7 +69,8 @@ object DeviceApi {
 
         client.newCall(req).execute().use { resp ->
             val text = resp.body?.string().orEmpty()
-            if (!resp.isSuccessful) throw IOException("HTTP ${resp.code}: ${text.take(200)}")
+            if (resp.code == 401) throw ApiException(401, "Invalid device token: ${text.take(200)}")
+            if (!resp.isSuccessful) throw ApiException(resp.code, "HTTP ${resp.code}: ${text.take(200)}")
             return JSONObject(text).getInt("received")
         }
     }

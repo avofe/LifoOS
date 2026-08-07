@@ -1,9 +1,13 @@
 package lifeos.mobile
 
+import android.app.AppOpsManager
+import android.app.usage.UsageStatsManager
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Process
 import android.provider.Settings
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -16,6 +20,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import lifeos.mobile.databinding.ActivityMainBinding
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
@@ -31,6 +38,8 @@ class MainActivity : AppCompatActivity() {
         refreshStatus()
 
         binding.grant.setOnClickListener { openUsageAccessSettings() }
+
+        binding.syncNow.setOnClickListener { runSyncNow() }
 
         binding.connect.setOnClickListener {
             val server = binding.server.text.toString().trim()
@@ -49,6 +58,7 @@ class MainActivity : AppCompatActivity() {
                     Store.setServer(this@MainActivity, server)
                     Store.setToken(this@MainActivity, result.token)
                     Store.setDeviceId(this@MainActivity, result.id)
+                    Store.setAccessKey(this@MainActivity, key)
                     Store.setLastSync(this@MainActivity, 0L)
                     scheduleWork()
                     toast("Устройство «${result.name}» подключено")
@@ -83,14 +93,56 @@ class MainActivity : AppCompatActivity() {
         } else {
             "Выдай доступ к использованию приложений, иначе не будет данных"
         }
+
+        val lastSync = Store.lastSyncTime(this)
+        val syncText = if (lastSync > 0L) {
+            "Последняя синхронизация: ${fmtTime(lastSync)}"
+        } else {
+            "Синхронизации ещё не было"
+        }
+        val err = Store.lastError(this)
+        binding.lastSync.text = syncText + if (err.isNullOrEmpty()) "" else "\nПоследняя ошибка: $err"
+
         if (!token.isNullOrEmpty()) scheduleWork()
     }
 
-    private fun hasUsageAccess(): Boolean {
-        val usm = getSystemService(android.app.usage.UsageStatsManager::class.java)
-        val info = usm.queryUsageStats(android.app.usage.UsageStatsManager.INTERVAL_DAILY, 0, 1)
-        return info != null && info.isNotEmpty()
+    private fun runSyncNow() {
+        if (Store.token(this).isNullOrEmpty()) {
+            toast("Сначала подключи устройство")
+            return
+        }
+        val work = OneTimeWorkRequestBuilder<CollectorWorker>().build()
+        WorkManager.getInstance(this).enqueue(work)
+        toast("Синхронизация запущена — проверь статус через пару секунд")
+        binding.lastSync.postDelayed({ refreshStatus() }, 3000)
     }
+
+    private fun hasUsageAccess(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val appOps = getSystemService(AppOpsManager::class.java)
+            val mode = appOps.unsafeCheckOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                Process.myUid(),
+                packageName
+            )
+            if (mode == AppOpsManager.MODE_ALLOWED) return true
+            if (mode == AppOpsManager.MODE_DEFAULT) {
+                return checkSelfPermission(android.Manifest.permission.PACKAGE_USAGE_STATS) ==
+                    PackageManager.PERMISSION_GRANTED
+            }
+            return false
+        }
+        return try {
+            val usm = getSystemService(UsageStatsManager::class.java)
+            val info = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, 0, 1)
+            info != null && info.isNotEmpty()
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
+    private fun fmtTime(ms: Long): String =
+        SimpleDateFormat("dd.MM HH:mm", Locale.getDefault()).format(Date(ms))
 
     private fun scheduleWork() {
         val periodic = PeriodicWorkRequestBuilder<CollectorWorker>(15, TimeUnit.MINUTES)

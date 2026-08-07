@@ -28,10 +28,17 @@ const SYSTEM_EXCLUDE = [
   /^windows(?!terminal)/i,
   /^microsoft\s*windows/i,
   /^security\s*health/i,
+  /^com\.android\.(launcher|systemui|settings|phone|dialer|mms|email|contacts|permissioncontroller|packageinstaller|documentsui|intentresolver|vending|gms|gsf|htmlviewer|providers\.)/i,
+  /^com\.google\.android\.(permissioncontroller|packageinstaller|documentsui|vending|gms|gsf)/i,
+  /^com\.oplus\.(sos|linker|systemui|launcher|settings|cast)/i,
+  /^com\.coloros\.(sos|systemui|launcher|settings|permissionmanager|safecenter)/i,
+  /^(android|com\.android)$/i,
+  /^(system\s*launcher|launcher|установщик\s*пакетов|контролер\s*разрешений|сервисы\s*google\s*play|телефонные\s*службы|система\s*android|google\s*play|play\s*store)$/i,
 ];
 
-function isSystem(app: string): boolean {
-  return SYSTEM_EXCLUDE.some((re) => re.test(app));
+function isSystem(app: string, title: string): boolean {
+  const haystack = `${app} ${title}`;
+  return SYSTEM_EXCLUDE.some((re) => re.test(haystack));
 }
 
 const BROWSER_SUFFIXES = [
@@ -97,7 +104,7 @@ const APP_CATEGORIES: { match: (app: string, title: string) => boolean; name: st
 ];
 
 function categorize(app: string, title: string): { name: string; color: string; skip: boolean } {
-  if (isSystem(app)) return { name: "", color: "#52526A", skip: true };
+  if (isSystem(app, title)) return { name: "", color: "#52526A", skip: true };
 
   for (const c of APP_CATEGORIES) {
     if (c.match(app, title)) {
