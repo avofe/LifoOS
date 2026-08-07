@@ -19,6 +19,15 @@ packages/db/generated/
 # Build artifacts (regenerated from source)
 apps/web/out/
 apps/web/public/setup-second-pc.ps1
+
+# Android
+apps/android/local.properties
+apps/android/.gradle/
+apps/android/**/build/
+apps/android/.idea/
+apps/android/captures/
+*.apk
+*.aab
 apps/desktop/resources/api/
 apps/desktop/src-tauri/gen/
 
