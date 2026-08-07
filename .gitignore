@@ -18,6 +18,7 @@ packages/db/generated/
 
 # Build artifacts (regenerated from source)
 apps/web/out/
+apps/web/public/setup-second-pc.ps1
 apps/desktop/resources/api/
 apps/desktop/src-tauri/gen/
 

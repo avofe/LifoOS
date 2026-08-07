@@ -96,6 +96,13 @@ Write-Step "3. Build web (local)"
 $tarFile = Join-Path $env:TEMP "lifeos-web-out.tar.gz"
 if (Test-Path $tarFile) { Remove-Item $tarFile -Force }
 
+$setupScript = Join-Path $RepoRoot "scripts\setup-second-pc.ps1"
+$publicCopy = Join-Path $RepoRoot "apps\web\public\setup-second-pc.ps1"
+if (Test-Path $setupScript) {
+  Copy-Item -Force $setupScript $publicCopy
+  Write-Host "  synced setup script into web/public" -ForegroundColor Green
+}
+
 if (-not $SkipWebBuild) {
   Push-Location $RepoRoot
   try {
