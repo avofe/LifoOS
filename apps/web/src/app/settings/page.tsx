@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { apiFetch, apiGet } from "@/lib/api";
+import { apiFetch, apiGet, getAccessKey, setAccessKey } from "@/lib/api";
 
 interface Settings {
   groqApiKey?: string;
@@ -49,6 +49,8 @@ export default function SettingsPage() {
   const [devType, setDevType] = useState("desktop");
   const [registered, setRegistered] = useState<RegisteredDevice | null>(null);
   const [copied, setCopied] = useState(false);
+  const [accessKey, setAccessKeyState] = useState("");
+  const [accessSaved, setAccessSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
@@ -64,6 +66,7 @@ export default function SettingsPage() {
     }
     setStreamers(st ?? []);
     setDevices(d ?? []);
+    setAccessKeyState(getAccessKey());
     setLoading(false);
   }, []);
 
@@ -134,6 +137,13 @@ export default function SettingsPage() {
     } catch {}
   };
 
+  const handleSaveAccessKey = async () => {
+    setAccessKey(accessKey.trim());
+    setAccessSaved(true);
+    setTimeout(() => setAccessSaved(false), 2000);
+    setTimeout(() => window.location.reload(), 400);
+  };
+
   const handleCopyToken = async () => {
     if (!registered) return;
     try {
@@ -171,6 +181,36 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 bg-black p-6">
       <h1 className="text-lg font-semibold text-zinc-200">Настройки</h1>
+
+      {/* Server access key */}
+      <section className="rounded-xl border border-zinc-800 bg-surface p-5">
+        <h2 className="mb-1 text-sm font-semibold text-zinc-300">
+          Доступ к серверу
+        </h2>
+        <p className="mb-4 text-xs text-zinc-600">
+          Мастер-ключ, который вводится при подключении к защищённому серверу.
+          Хранится только на этом устройстве.
+        </p>
+        <div className="flex items-center gap-2">
+          <input
+            type="password"
+            value={accessKey}
+            onChange={(e) => setAccessKeyState(e.target.value)}
+            placeholder="Мастер-ключ"
+            className="w-full max-w-sm rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-accent"
+          />
+          <button
+            onClick={handleSaveAccessKey}
+            disabled={!accessKey.trim()}
+            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-50"
+          >
+            Сохранить
+          </button>
+          {accessSaved && (
+            <span className="text-xs text-emerald-400">Сохранено</span>
+          )}
+        </div>
+      </section>
 
       {/* API Keys */}
       <section className="rounded-xl border border-zinc-800 bg-surface p-5">
