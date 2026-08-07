@@ -37,8 +37,7 @@ const SYSTEM_EXCLUDE = [
 ];
 
 function isSystem(app: string, title: string): boolean {
-  const haystack = `${app} ${title}`;
-  return SYSTEM_EXCLUDE.some((re) => re.test(haystack));
+  return SYSTEM_EXCLUDE.some((re) => re.test(app) || re.test(title));
 }
 
 const BROWSER_SUFFIXES = [
