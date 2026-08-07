@@ -9,7 +9,7 @@ const screenEventSchema = z.object({
   timestamp: z.string().min(1),
   duration: z.number().int().min(1),
   app: z.string().min(1).max(200),
-  title: z.string().max(500).optional().nullable(),
+  title: z.string().max(2000).optional().nullable(),
 });
 
 const ingestSchema = z.object({
@@ -72,7 +72,7 @@ export function screentimeRouter(): Router {
         timestamp: new Date(e.timestamp),
         duration: e.duration,
         app: e.app,
-        title: e.title ?? null,
+        title: (e.title ?? null)?.slice(0, 500),
       }));
 
       const batchSize = 500;

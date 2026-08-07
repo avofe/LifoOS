@@ -100,8 +100,8 @@ async function runOnce() {
   for (const e of events) {
     const dur = Number(e.duration || 0);
     if (dur < 1) continue;
-    const app = (e.data?.app ?? e.data?.application ?? "").trim();
-    const title = (e.data?.title ?? "").trim();
+    const app = (e.data?.app ?? e.data?.application ?? "").trim().slice(0, 200);
+    const title = (e.data?.title ?? "").trim().slice(0, 500);
     valid.push({ timestamp: e.timestamp, duration: Math.round(dur), app, title });
   }
 
