@@ -1,13 +1,20 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { Sidebar } from "@/components/Sidebar";
+import { MobileNav } from "@/components/MobileNav";
 import { AccessKeyModal } from "@/components/AccessKeyModal";
 
 export const metadata: Metadata = {
   title: "LifeOS",
   description: "Personal life operating system",
   icons: "/favicon.svg",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -20,10 +27,11 @@ export default function RootLayout({
       <body>
         <div className="flex min-h-screen">
           <Sidebar />
-          <div className="ml-12 flex min-w-0 flex-1 overflow-x-hidden">
+          <div className="flex min-w-0 flex-1 overflow-x-hidden pb-[calc(env(safe-area-inset-bottom)_+_3.5rem)] pt-[env(safe-area-inset-top)] md:ml-12 md:pb-0">
             {children}
           </div>
         </div>
+        <MobileNav />
         <Toaster
           position="bottom-right"
           toastOptions={{
