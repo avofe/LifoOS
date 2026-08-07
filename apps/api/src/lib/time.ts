@@ -29,19 +29,34 @@ export function setTimezoneCache(tz: string) {
 }
 
 export function getTodayStart(tz: string, now = new Date()): Date {
-  const parts = new Intl.DateTimeFormat("en-CA", {
+  const day = new Intl.DateTimeFormat("en-CA", {
     timeZone: tz,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   }).formatToParts(now);
 
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const get = (t: string) => day.find((p) => p.type === t)?.value ?? "";
   const y = Number(get("year"));
   const m = Number(get("month")) - 1;
   const d = Number(get("day"));
 
-  return new Date(Date.UTC(y, m, d));
+  const clock = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+    hourCycle: "h23",
+  }).formatToParts(now);
+
+  const chh = Number(clock.find((p) => p.type === "hour")?.value ?? "0");
+  const cmm = Number(clock.find((p) => p.type === "minute")?.value ?? "0");
+  const css = Number(clock.find((p) => p.type === "second")?.value ?? "0");
+
+  const localAsUtc = Date.UTC(y, m, d, chh, cmm, css);
+  const offsetMs = localAsUtc - now.getTime();
+
+  return new Date(Date.UTC(y, m, d) - offsetMs);
 }
 
 export function getDayStart(offsetDays: number, tz: string, now = new Date()): Date {
