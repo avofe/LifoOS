@@ -2027,6 +2027,7 @@ dependencies = [
  "tauri-plugin-autostart",
  "tauri-plugin-notification",
  "tauri-plugin-shell",
+ "url",
 ]
 
 [[package]]

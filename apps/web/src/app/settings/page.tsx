@@ -13,6 +13,28 @@ interface Streamer {
   name: string;
 }
 
+interface Device {
+  id: string;
+  name: string;
+  type: string;
+  os: string | null;
+  lastSeenAt: string;
+  createdAt: string;
+}
+
+interface RegisteredDevice {
+  id: string;
+  name: string;
+  type: string;
+  token: string;
+}
+
+const DEVICE_TYPES = [
+  { value: "desktop", label: "Компьютер" },
+  { value: "mobile", label: "Телефон" },
+  { value: "tablet", label: "Планшет" },
+];
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>({});
   const [groqKey, setGroqKey] = useState("");
@@ -22,12 +44,18 @@ export default function SettingsPage() {
   const [streamers, setStreamers] = useState<Streamer[]>([]);
   const [newLogin, setNewLogin] = useState("");
   const [newName, setNewName] = useState("");
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [devName, setDevName] = useState("");
+  const [devType, setDevType] = useState("desktop");
+  const [registered, setRegistered] = useState<RegisteredDevice | null>(null);
+  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
-    const [s, st] = await Promise.all([
+    const [s, st, d] = await Promise.all([
       apiGet<Settings>("/api/settings"),
       apiGet<Streamer[]>("/api/twitch/streamers"),
+      apiGet<Device[]>("/api/devices"),
     ]);
     if (s) {
       setSettings(s);
@@ -35,6 +63,7 @@ export default function SettingsPage() {
       setYoutubeKey(s.youtubeApiKey ?? "");
     }
     setStreamers(st ?? []);
+    setDevices(d ?? []);
     setLoading(false);
   }, []);
 
@@ -81,6 +110,55 @@ export default function SettingsPage() {
       setStreamers(st);
     } catch {}
   };
+
+  const handleRegisterDevice = async () => {
+    if (!devName.trim()) return;
+    try {
+      const dev = await apiFetch<RegisteredDevice>("/api/devices/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: devName.trim(), type: devType }),
+      });
+      setRegistered(dev);
+      setDevName("");
+      setDevType("desktop");
+      const list = await apiGet<Device[]>("/api/devices");
+      setDevices(list ?? []);
+    } catch {}
+  };
+
+  const handleRemoveDevice = async (id: string) => {
+    try {
+      await apiFetch(`/api/devices/${id}`, { method: "DELETE", silent: true });
+      setDevices((prev) => prev.filter((d) => d.id !== id));
+    } catch {}
+  };
+
+  const handleCopyToken = async () => {
+    if (!registered) return;
+    try {
+      await navigator.clipboard.writeText(registered.token);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  };
+
+  function fmtLastSeen(iso: string): string {
+    const d = new Date(iso);
+    const diff = Date.now() - d.getTime();
+    if (diff < 5 * 60 * 1000) return "только что";
+    if (diff < 60 * 60 * 1000) return `${Math.round(diff / 60000)} мин назад`;
+    return d.toLocaleString("ru-RU", {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  function typeLabel(t: string): string {
+    return DEVICE_TYPES.find((x) => x.value === t)?.label ?? t;
+  }
 
   if (loading) {
     return (
@@ -184,6 +262,102 @@ export default function SettingsPage() {
             Добавить
           </button>
         </div>
+      </section>
+
+      {/* Devices */}
+      <section className="rounded-xl border border-zinc-800 bg-surface p-5">
+        <h2 className="mb-4 text-sm font-semibold text-zinc-300">Устройства</h2>
+
+        {registered && (
+          <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4">
+            <div className="mb-1 text-xs font-medium text-emerald-400">
+              Устройство «{registered.name}» зарегистрировано
+            </div>
+            <p className="mb-2 text-[11px] text-zinc-500">
+              Токен показывается один раз. Вставь его в конфигурацию коллектора
+              (LIFEOS_DEVICE_TOKEN) на этом устройстве.
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 truncate rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-300">
+                {registered.token}
+              </code>
+              <button
+                onClick={handleCopyToken}
+                className="rounded-lg bg-accent px-3 py-2 text-xs font-medium text-white transition hover:brightness-110"
+              >
+                {copied ? "Скопировано" : "Копировать"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="mb-4 flex flex-wrap items-end gap-2">
+          <div>
+            <label className="mb-1 block text-[10px] text-zinc-600">Название</label>
+            <input
+              value={devName}
+              onChange={(e) => setDevName(e.target.value)}
+              placeholder="PC-2"
+              className="w-40 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-accent"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[10px] text-zinc-600">Тип</label>
+            <select
+              value={devType}
+              onChange={(e) => setDevType(e.target.value)}
+              className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 outline-none focus:border-accent"
+            >
+              {DEVICE_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={handleRegisterDevice}
+            disabled={!devName.trim()}
+            className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-50"
+          >
+            Зарегистрировать
+          </button>
+        </div>
+
+        {devices.length === 0 ? (
+          <p className="text-sm text-zinc-600">
+            Пока нет устройств. Зарегистрируй первое, чтобы собирать скринтайм.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {devices.map((d) => (
+              <div
+                key={d.id}
+                className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2.5"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="text-sm text-zinc-200">{d.name}</span>
+                  <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400">
+                    {typeLabel(d.type)}
+                  </span>
+                  {d.os && (
+                    <span className="text-[11px] text-zinc-600">{d.os}</span>
+                  )}
+                  <span className="text-[11px] text-zinc-600">
+                    {fmtLastSeen(d.lastSeenAt)}
+                  </span>
+                </div>
+                <button
+                  onClick={() => handleRemoveDevice(d.id)}
+                  className="text-zinc-600 transition hover:text-red-400"
+                  title="Удалить устройство"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

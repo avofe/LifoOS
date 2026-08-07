@@ -85,6 +85,36 @@ fn setup_api(app: &App<Wry>) -> Option<Child> {
     }
 }
 
+const LOCAL_URL: &str = "http://localhost:4000";
+
+fn resolve_remote_url() -> Option<String> {
+    if let Ok(v) = std::env::var("LIFOOS_SERVER") {
+        let v = v.trim().to_string();
+        if !v.is_empty() {
+            return Some(v);
+        }
+    }
+
+    let exe_dir = std::env::current_exe().ok()?.parent()?.to_path_buf();
+    let config = exe_dir.join("lifeos-server.txt");
+    if let Ok(content) = std::fs::read_to_string(&config) {
+        let v = content.lines().next().unwrap_or("").trim().to_string();
+        if !v.is_empty() {
+            return Some(v);
+        }
+    }
+
+    None
+}
+
+fn ensure_url_scheme(url: &str) -> String {
+    if url.starts_with("http://") || url.starts_with("https://") {
+        url.to_string()
+    } else {
+        format!("http://{url}")
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -95,37 +125,62 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_notification::init())
         .setup(|app| {
-            let child = setup_api(app);
+            let remote = resolve_remote_url().map(|u| ensure_url_scheme(&u));
+            let (server_url, child) = match remote {
+                Some(url) => {
+                    println!("[lifeos] Remote mode — server: {}", url);
+                    (url, None)
+                }
+                None => {
+                    let child = setup_api(app);
+                    (LOCAL_URL.to_string(), child)
+                }
+            };
+
             if let Some(c) = child {
                 app.manage(ApiProcess(Mutex::new(Some(c))));
+            }
+
+            let mut allowed_hosts = vec!["localhost".to_string(), "127.0.0.1".to_string()];
+            if let Ok(parsed) = url::Url::parse(&server_url) {
+                if let Some(host) = parsed.host_str() {
+                    allowed_hosts.push(host.to_string());
+                }
             }
 
             let _window = WebviewWindowBuilder::new(
                 app,
                 "main",
-                WebviewUrl::External("http://localhost:4000".parse().unwrap()),
+                WebviewUrl::External(server_url.parse().unwrap()),
             )
             .title("LifeOS")
             .inner_size(1280.0, 800.0)
             .min_inner_size(900.0, 600.0)
             .center()
             .resizable(true)
-            .on_navigation(|url| {
+            .on_navigation(move |url| {
                 let host = url.host_str().unwrap_or("");
-                if host == "localhost" || host == "127.0.0.1" {
+                if allowed_hosts.iter().any(|h| h == host) {
                     return true;
                 }
                 let url_str = url.as_str().to_string();
                 std::thread::spawn(move || {
-                    let _ = Command::new("cmd")
-                        .args(["/c", "start", &url_str])
-                        .spawn();
+                    #[cfg(target_os = "windows")]
+                    {
+                        let _ = Command::new("cmd")
+                            .args(["/c", "start", &url_str])
+                            .spawn();
+                    }
+                    #[cfg(not(target_os = "windows"))]
+                    {
+                        eprintln!("[lifeos] external link blocked (open helper not configured): {}", url_str);
+                    }
                 });
                 false
             })
             .build()?;
 
-            println!("[lifeos] Window created, loading http://localhost:4000");
+            println!("[lifeos] Window created, loading {}", server_url);
             Ok(())
         })
         .on_window_event(|window, event| {
