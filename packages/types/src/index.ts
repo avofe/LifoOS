@@ -38,6 +38,25 @@ export interface SubsStats {
   yearlyTotal: number;
 }
 
+export interface CalendarPaymentItem {
+  id: string;
+  name: string;
+  cost: number;
+  currency: string;
+}
+
+export interface PaymentCalendarDay {
+  day: number;
+  total: number;
+  items: CalendarPaymentItem[];
+}
+
+export interface PaymentCalendarData {
+  month: string;
+  total: number;
+  days: PaymentCalendarDay[];
+}
+
 /* ── Twitch ── */
 export interface TwitchStreamer {
   id: string;
@@ -129,6 +148,18 @@ export interface DeviceBreakdown {
   totalToday: string | null;
   weekDays: WeekDay[];
   apps: AppStat[];
+}
+
+/* ── Screen Time Limits ── */
+export interface ScreenLimitInfo {
+  limitMin: number | null;
+  usedSec: number;
+  over: boolean;
+}
+
+export interface ScreenLimitsData {
+  total: ScreenLimitInfo;
+  apps: { name: string; limitMin: number | null; usedSec: number; over: boolean }[];
 }
 
 /* ── Timeline ── */

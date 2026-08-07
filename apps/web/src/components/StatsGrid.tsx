@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { apiGet } from "@/lib/api";
-import { useYouTube } from "@/hooks/useYouTube";
-import type { SubsStats, TwitchStreamer, ScreenTimeData } from "@lifeos/types";
+import type { SubsStats, TwitchStreamer, ScreenTimeData, ScreenLimitsData } from "@lifeos/types";
 
 export function StatsGrid() {
   const [subsStats, setSubsStats] = useState<SubsStats | null>(null);
   const [twitchData, setTwitchData] = useState<TwitchStreamer[]>([]);
   const [screenTime, setScreenTime] = useState<ScreenTimeData | null>(null);
-  const { videos: ytVideos, loading: ytLoading } = useYouTube();
+  const [limits, setLimits] = useState<ScreenLimitsData | null>(null);
 
   useEffect(() => {
     apiGet<SubsStats>("/api/subscriptions/stats").then(setSubsStats);
@@ -24,15 +23,19 @@ export function StatsGrid() {
   }, []);
 
   useEffect(() => {
+    apiGet<ScreenLimitsData>("/api/screentime/limits").then((d) => setLimits(d ?? null));
+  }, []);
+
+  useEffect(() => {
     const id = setInterval(() => {
       apiGet<SubsStats>("/api/subscriptions/stats").then(setSubsStats);
       apiGet<TwitchStreamer[]>("/api/twitch/streams").then((d) => setTwitchData(d ?? []));
       apiGet<ScreenTimeData>("/api/screentime").then((d) => setScreenTime(d ?? null));
+      apiGet<ScreenLimitsData>("/api/screentime/limits").then((d) => setLimits(d ?? null));
     }, 60000);
     return () => clearInterval(id);
   }, []);
 
-  const ytCount = ytVideos.length;
   const onlineCount = twitchData.filter((s) => s.online).length;
   const totalTracked = twitchData.length;
 
@@ -42,6 +45,10 @@ export function StatsGrid() {
     const rest = screenTime.apps.length - 3;
     return rest > 0 ? `${top} +${rest} ещё` : top;
   }
+
+  const limitMin = limits?.total.limitMin ?? null;
+  const limitUsedSec = limits?.total.usedSec ?? 0;
+  const limitOver = limits?.total.over ?? false;
 
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -56,9 +63,15 @@ export function StatsGrid() {
         subtitle={subsStats ? `${subsStats.total} сервисов` : undefined}
       />
       <Stat
-        label="Новый контент"
-        value={ytLoading ? "..." : String(ytCount)}
-        subtitle={ytCount > 0 ? "новых видео" : ytLoading ? undefined : "нет новых видео"}
+        label="Лимит экрана"
+        value={limitMin !== null ? fmtLimit(limitUsedSec) : "—"}
+        subtitle={
+          limitMin === null
+            ? "лимит не задан"
+            : `${Math.min(100, Math.round((limitUsedSec / (limitMin * 60)) * 100))}% от ${fmtMinutes(limitMin)}`
+        }
+        pill={limitOver ? "превышен" : undefined}
+        pillVariant="down"
       />
       <Stat
         label="Twitch"
@@ -75,6 +88,20 @@ export function StatsGrid() {
       />
     </div>
   );
+}
+
+function fmtLimit(totalSec: number): string {
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  if (h === 0) return `${m}м`;
+  return `${h}ч ${m}м`;
+}
+
+function fmtMinutes(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h === 0) return `${m}м`;
+  return m === 0 ? `${h}ч` : `${h}ч ${m}м`;
 }
 
 function Stat({

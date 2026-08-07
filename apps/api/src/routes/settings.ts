@@ -12,6 +12,10 @@ const updateSettingsSchema = z.object({
   youtubeApiKey: z.string().optional(),
   timezone: z.string().optional(),
   weatherLocation: z.string().optional(),
+  screenLimitTotal: z.number().int().min(0).max(1440).nullable().optional(),
+  screenLimitApps: z
+    .record(z.string(), z.number().int().min(0).max(1440))
+    .optional(),
 });
 
 export function createSettingsRouter(): Router {
@@ -37,7 +41,7 @@ export function createSettingsRouter(): Router {
 
   router.put("/", validate(updateSettingsSchema), async (req, res) => {
     try {
-      const { groqApiKey, youtubeApiKey, timezone, weatherLocation } = req.body;
+      const { groqApiKey, youtubeApiKey, timezone, weatherLocation, screenLimitTotal, screenLimitApps } = req.body;
 
       const upserts: Promise<any>[] = [];
 
@@ -83,6 +87,26 @@ export function createSettingsRouter(): Router {
           })
         );
         setTimezoneCache(timezone);
+      }
+
+      if (screenLimitTotal !== undefined) {
+        upserts.push(
+          prisma.setting.upsert({
+            where: { userId_key: { userId: USER_ID, key: "screenLimitTotal" } },
+            create: { userId: USER_ID, key: "screenLimitTotal", value: screenLimitTotal },
+            update: { value: screenLimitTotal },
+          })
+        );
+      }
+
+      if (screenLimitApps !== undefined) {
+        upserts.push(
+          prisma.setting.upsert({
+            where: { userId_key: { userId: USER_ID, key: "screenLimitApps" } },
+            create: { userId: USER_ID, key: "screenLimitApps", value: screenLimitApps },
+            update: { value: screenLimitApps },
+          })
+        );
       }
 
       await Promise.all(upserts);

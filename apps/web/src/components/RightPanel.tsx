@@ -45,7 +45,7 @@ export function RightPanel() {
   }, [fetchTimeline]);
 
   const fetchSubs = useCallback(() => {
-    apiGet<Subscription[]>("/api/subscriptions?upcomingDays=14")
+    apiGet<Subscription[]>("/api/subscriptions?upcomingDays=31")
       .then((data) => {
         if (data) {
           setSubs(data);
@@ -103,7 +103,7 @@ export function RightPanel() {
               Нет ближайших платежей
             </p>
           )}
-          {subs.map((s) => (
+          {subs.slice(0, 10).map((s) => (
             <div
               key={s.id}
               className="flex items-center justify-between border-b border-zinc-800 py-2 last:border-none"
@@ -135,6 +135,12 @@ export function RightPanel() {
             {formatCost(total, "RUB")}
           </b>
         </div>
+        <a
+          href="/subscriptions"
+          className="mt-1 inline-block text-[11px] text-accent transition hover:opacity-80"
+        >
+          Календарь →
+        </a>
       </Section>
 
       {/* Twitch */}

@@ -535,6 +535,65 @@ export async function fetchAnalyticsFromAw(): Promise<{
 // Public API: DB first, then live AW, then null (route falls to MOCK)
 // ─────────────────────────────────────────────────────────────
 
+export async function fetchScreenLimits(): Promise<{
+  total: { limitMin: number | null; usedSec: number; over: boolean };
+  apps: { name: string; limitMin: number | null; usedSec: number; over: boolean }[];
+}> {
+  const tz = await getTimezone();
+  const now = new Date();
+
+  const todayStart = getDayStart(0, tz, now);
+  const end = getNextDayStart(todayStart);
+
+  const events = await fetchEventsFromDb(undefined, todayStart, end);
+
+  const settings = await prisma.setting.findMany({ where: { userId: USER_ID } });
+  const map: Record<string, any> = {};
+  for (const s of settings) map[s.key] = s.value;
+
+  const totalLimitMin =
+    typeof map.screenLimitTotal === "number" ? map.screenLimitTotal : null;
+  const appLimits: Record<string, number> =
+    map.screenLimitApps && typeof map.screenLimitApps === "object"
+      ? (map.screenLimitApps as Record<string, number>)
+      : {};
+
+  const categories: CategoryMap = {};
+  for (const e of events) {
+    if (e.duration < 1) continue;
+    const cat = categorize(e.app, e.title ?? "");
+    if (cat.skip) continue;
+    if (!categories[cat.name]) {
+      categories[cat.name] = { name: cat.name, color: cat.color, seconds: 0 };
+    }
+    categories[cat.name].seconds += e.duration;
+  }
+
+  const totalUsedSec = events.reduce((sum, e) => sum + e.duration, 0);
+
+  const apps = Object.values(categories)
+    .sort((a, b) => b.seconds - a.seconds)
+    .slice(0, 8)
+    .map((a) => {
+      const limitMin = typeof appLimits[a.name] === "number" ? appLimits[a.name] : null;
+      return {
+        name: a.name,
+        limitMin,
+        usedSec: a.seconds,
+        over: limitMin !== null && a.seconds > limitMin * 60,
+      };
+    });
+
+  return {
+    total: {
+      limitMin: totalLimitMin,
+      usedSec: totalUsedSec,
+      over: totalLimitMin !== null && totalUsedSec > totalLimitMin * 60,
+    },
+    apps,
+  };
+}
+
 export async function fetchScreenTime(deviceId?: string) {
   const fromDb = await fetchScreenTimeFromDb(deviceId);
   if (fromDb) return fromDb;

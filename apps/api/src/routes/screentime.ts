@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "@lifeos/db";
-import { fetchScreenTime, fetchAnalytics, fetchDeviceBreakdown } from "../lib/screentime";
+import { fetchScreenTime, fetchAnalytics, fetchDeviceBreakdown, fetchScreenLimits } from "../lib/screentime";
 import { requireDeviceToken } from "../lib/auth";
 import { USER_ID } from "../index";
 import { validate, z } from "../validate";
@@ -43,6 +43,16 @@ export function screentimeRouter(): Router {
     } catch (err) {
       console.error("[screentime] GET /devices", err);
       res.status(500).json({ error: "Failed to fetch device breakdown" });
+    }
+  });
+
+  router.get("/limits", async (_req, res) => {
+    try {
+      const data = await fetchScreenLimits();
+      res.json(data);
+    } catch (err) {
+      console.error("[screentime] GET /limits", err);
+      res.status(500).json({ error: "Failed to fetch screen time limits" });
     }
   });
 

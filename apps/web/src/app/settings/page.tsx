@@ -8,6 +8,13 @@ interface Settings {
   groqApiKey?: string;
   youtubeApiKey?: string;
   weatherLocation?: string;
+  screenLimitTotal?: number | null;
+  screenLimitApps?: Record<string, number>;
+}
+
+interface LimitAppRow {
+  name: string;
+  usedSec: number;
 }
 
 interface Streamer {
@@ -46,21 +53,32 @@ export default function SettingsPage() {
   const [accessKey, setAccessKeyState] = useState("");
   const [accessSaved, setAccessSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [limitTotal, setLimitTotal] = useState(0);
+  const [appLimits, setAppLimits] = useState<Record<string, number>>({});
+  const [limitApps, setLimitApps] = useState<LimitAppRow[]>([]);
+  const [limitSaving, setLimitSaving] = useState(false);
+  const [limitSaved, setLimitSaved] = useState(false);
 
   const fetchAll = useCallback(async () => {
-    const [s, st, d] = await Promise.all([
+    const [s, st, d, l] = await Promise.all([
       apiGet<Settings>("/api/settings"),
       apiGet<Streamer[]>("/api/twitch/streamers"),
       apiGet<Device[]>("/api/devices"),
+      apiGet<{ total: { usedSec: number }; apps: { name: string; usedSec: number }[] }>("/api/screentime/limits"),
     ]);
     if (s) {
       setSettings(s);
       setGroqKey(s.groqApiKey ?? "");
       setYoutubeKey(s.youtubeApiKey ?? "");
       setWeatherLocation(s.weatherLocation ?? "");
+      setLimitTotal(s.screenLimitTotal ?? 0);
+      setAppLimits(s.screenLimitApps ?? {});
     }
     setStreamers(st ?? []);
     setDevices(d ?? []);
+    if (l) {
+      setLimitApps(l.apps);
+    }
     setAccessKeyState(getAccessKey());
     setLoading(false);
   }, []);
@@ -139,6 +157,35 @@ export default function SettingsPage() {
     setTimeout(() => setAccessSaved(false), 2000);
     setTimeout(() => window.location.reload(), 400);
   };
+
+  const handleSaveLimits = async () => {
+    setLimitSaving(true);
+    try {
+      const apps: Record<string, number> = {};
+      for (const [name, min] of Object.entries(appLimits)) {
+        if (min > 0) apps[name] = min;
+      }
+      await apiFetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          screenLimitTotal: limitTotal > 0 ? limitTotal : null,
+          screenLimitApps: apps,
+        }),
+      });
+      setLimitSaved(true);
+      setTimeout(() => setLimitSaved(false), 2000);
+    } finally {
+      setLimitSaving(false);
+    }
+  };
+
+  function fmtUsed(totalSec: number): string {
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    if (h === 0) return `${m}м`;
+    return `${h}ч ${m}м`;
+  }
 
   const handleCopyToken = async () => {
     if (!registered) return;
@@ -257,6 +304,80 @@ export default function SettingsPage() {
               {saving ? "Сохранение..." : "Сохранить"}
             </button>
             {saved && (
+              <span className="text-xs text-emerald-400">Сохранено</span>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Screen time limits */}
+      <section className="rounded-xl border border-zinc-800 bg-surface p-5">
+        <h2 className="mb-1 text-sm font-semibold text-zinc-300">Лимиты экрана</h2>
+        <p className="mb-4 text-xs text-zinc-600">
+          Дневной лимит на весь экран и отдельные приложения. Сегодня:
+          {limitApps.length > 0 ? ` ${limitApps.map((a) => `${a.name} — ${fmtUsed(a.usedSec)}`).join(", ")}` : " нет данных"}
+        </p>
+
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="mb-1 block text-xs text-zinc-500">
+              Общий лимит в день (минуты)
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={1440}
+              value={limitTotal || ""}
+              onChange={(e) => setLimitTotal(Number(e.target.value) || 0)}
+              placeholder="480"
+              className="w-full max-w-[160px] rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-accent"
+            />
+          </div>
+
+          {limitApps.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {limitApps.map((a) => (
+                <div
+                  key={a.name}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2"
+                >
+                  <div className="flex min-w-0 flex-col">
+                    <span className="truncate text-sm text-zinc-200">{a.name}</span>
+                    <span className="text-[11px] text-zinc-600">
+                      сегодня {fmtUsed(a.usedSec)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] text-zinc-600">мин/день</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={1440}
+                      value={appLimits[a.name] ?? ""}
+                      onChange={(e) =>
+                        setAppLimits((prev) => ({
+                          ...prev,
+                          [a.name]: Number(e.target.value) || 0,
+                        }))
+                      }
+                      placeholder="0"
+                      className="w-20 rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-accent"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleSaveLimits}
+              disabled={limitSaving}
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-50"
+            >
+              {limitSaving ? "Сохранение..." : "Сохранить лимиты"}
+            </button>
+            {limitSaved && (
               <span className="text-xs text-emerald-400">Сохранено</span>
             )}
           </div>

@@ -2,7 +2,6 @@ import { TopBar } from "@/components/TopBar";
 import { AiBrief } from "@/components/AiBrief";
 import { StatsGrid } from "@/components/StatsGrid";
 import { ScreenTimeCard } from "@/components/ScreenTimeCard";
-import { AiInput } from "@/components/AiInput";
 import { RightPanel } from "@/components/RightPanel";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -19,9 +18,6 @@ export default function Home() {
         </ErrorBoundary>
         <ErrorBoundary label="Экранное время">
           <ScreenTimeCard />
-        </ErrorBoundary>
-        <ErrorBoundary label="AI чат">
-          <AiInput />
         </ErrorBoundary>
       </main>
 

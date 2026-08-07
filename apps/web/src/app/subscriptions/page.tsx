@@ -6,6 +6,7 @@ import type { Subscription, SubsStats } from "@lifeos/types";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { SubscriptionFormModal } from "@/components/SubscriptionFormModal";
 import { PageHeader } from "@/components/PageHeader";
+import { PaymentCalendar } from "@/components/PaymentCalendar";
 
 export default function SubscriptionsPage() {
   const [subs, setSubs] = useState<Subscription[]>([]);
@@ -117,6 +118,9 @@ export default function SubscriptionsPage() {
               />
             </div>
           )}
+
+          {/* Calendar */}
+          <PaymentCalendar />
 
           {/* List */}
           <div className="flex flex-col gap-2">

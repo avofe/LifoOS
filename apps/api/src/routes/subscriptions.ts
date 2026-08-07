@@ -72,6 +72,74 @@ subscriptionRouter.get("/stats", async (_req, res) => {
   }
 });
 
+subscriptionRouter.get("/calendar", async (req, res) => {
+  try {
+    const monthParam =
+      typeof req.query.month === "string" ? req.query.month : undefined;
+    const now = new Date();
+    const year = monthParam ? Number(monthParam.slice(0, 4)) : now.getFullYear();
+    const month = monthParam ? Number(monthParam.slice(5, 7)) - 1 : now.getMonth();
+
+    if (Number.isNaN(year) || Number.isNaN(month) || month < 0 || month > 11) {
+      res.status(400).json({ error: "Invalid month" });
+      return;
+    }
+
+    const lastDay = new Date(year, month + 1, 0).getDate();
+
+    const subs = await prisma.subscription.findMany({
+      where: { userId: USER_ID },
+    });
+
+    const daysMap = new Map<
+      number,
+      { day: number; total: number; items: { id: string; name: string; cost: number; currency: string }[] }
+    >();
+
+    for (const s of subs) {
+      const next = new Date(s.nextPaymentAt);
+      const baseDay = next.getDate();
+      const step = s.billingCycle === "yearly" ? 12 : 1;
+
+      let y = next.getFullYear();
+      let m = next.getMonth();
+      let guard = 0;
+      while (guard < 2400) {
+        if (y > year || (y === year && m > month)) break;
+        if (y === year && m === month) {
+          const day = Math.min(baseDay, lastDay);
+          const entry = daysMap.get(day) ?? { day, total: 0, items: [] };
+          entry.total += Number(s.cost);
+          entry.items.push({
+            id: s.id,
+            name: s.name,
+            cost: Number(s.cost),
+            currency: s.currency,
+          });
+          daysMap.set(day, entry);
+          break;
+        }
+        m += step;
+        y += Math.floor(m / 12);
+        m = m % 12;
+        guard++;
+      }
+    }
+
+    const days = Array.from(daysMap.values()).sort((a, b) => a.day - b.day);
+    const total = Math.round(days.reduce((sum, d) => sum + d.total, 0) * 100) / 100;
+
+    res.json({
+      month: `${year}-${String(month + 1).padStart(2, "0")}`,
+      total,
+      days,
+    });
+  } catch (err) {
+    console.error("[subscriptions] GET /calendar", err);
+    res.status(500).json({ error: "Failed to fetch payment calendar" });
+  }
+});
+
 subscriptionRouter.get("/:id", async (req, res) => {
   try {
     const sub = await prisma.subscription.findUnique({

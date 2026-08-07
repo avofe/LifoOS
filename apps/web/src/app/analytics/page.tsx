@@ -80,9 +80,15 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [devices, setDevices] = useState<Device[]>([]);
   const [deviceId, setDeviceId] = useState<string>("");
+  const [limitSec, setLimitSec] = useState<number | null>(null);
 
   useEffect(() => {
     apiGet<Device[]>("/api/devices").then((d) => setDevices(d ?? []));
+    apiGet<{ screenLimitTotal?: number | null }>("/api/settings").then((s) => {
+      if (s && typeof s.screenLimitTotal === "number" && s.screenLimitTotal > 0) {
+        setLimitSec(s.screenLimitTotal * 60);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -191,19 +197,21 @@ export default function AnalyticsPage() {
                       tickFormatter={(v: number) => `${v / 3600}ч`}
                     />
                     <Tooltip content={<DailyChartTooltip />} cursor={{ fill: "rgba(123,111,240,0.06)" }} />
-                    <ReferenceLine
-                      y={28800}
-                      stroke="#F07070"
-                      strokeDasharray="4 3"
-                      strokeOpacity={0.5}
-                      label={{
-                        value: "8ч",
-                        position: "right",
-                        fill: "#F07070",
-                        fontSize: 10,
-                        fontFamily: "Space Mono",
-                      }}
-                    />
+                    {limitSec !== null && (
+                      <ReferenceLine
+                        y={limitSec}
+                        stroke="#F07070"
+                        strokeDasharray="4 3"
+                        strokeOpacity={0.5}
+                        label={{
+                          value: `${Math.round(limitSec / 3600)}ч`,
+                          position: "right",
+                          fill: "#F07070",
+                          fontSize: 10,
+                          fontFamily: "Space Mono",
+                        }}
+                      />
+                    )}
                     <Bar
                       dataKey="total"
                       radius={[3, 3, 0, 0]}
