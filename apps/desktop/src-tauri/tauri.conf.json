@@ -25,7 +25,8 @@
       "icons/icon.ico"
     ],
     "resources": {
-      "../resources/api/": "api/"
+      "../resources/api/": "api/",
+      "../resources/lifeos-server.txt": "lifeos-server.txt"
     }
   }
 }
