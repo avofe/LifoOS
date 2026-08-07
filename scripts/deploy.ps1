@@ -152,7 +152,13 @@ Write-Step "5. Smoke tests"
 if ($DryRun) {
   Write-Host "  [dry-run] smoke tests skipped" -ForegroundColor DarkYellow
 } else {
-  & (Join-Path $PSScriptRoot "smoke-test.ps1") -BaseUrl "http://138.124.74.151:4000"
+  $accessKey = ""
+  $envScript = "grep -oP '(?<=LIFEOS_ACCESS_KEY=`")[^`"]+' /opt/lifeos/apps/api/.env"
+  $envB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($envScript))
+  $raw = & ssh $SshHost "echo $envB64 | base64 -d | bash" 2>$null
+  if ($LASTEXITCODE -eq 0 -and $raw) { $accessKey = ($raw | Select-Object -First 1).Trim() }
+
+  & (Join-Path $PSScriptRoot "smoke-test.ps1") -BaseUrl "http://138.124.74.151:4000" -AccessKey $accessKey
   if ($LASTEXITCODE -ne 0) {
     Write-Host "`nDeploy finished but smoke tests FAILED" -ForegroundColor Red
     exit 1

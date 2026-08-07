@@ -1,6 +1,7 @@
 # LifoOS API Smoke Tests
 param(
-  [string]$BaseUrl = "http://localhost:4000"
+  [string]$BaseUrl = "http://localhost:4000",
+  [string]$AccessKey = ""
 )
 
 $pass = 0
@@ -13,6 +14,10 @@ function Test-Status {
     $req = [System.Net.HttpWebRequest]::Create("$BaseUrl$Url")
     $req.Method = $Method
     $req.Timeout = 5000
+
+    if ($AccessKey) {
+      $req.Headers["x-api-key"] = $AccessKey
+    }
 
     if ($Body) {
       $req.ContentType = "application/json"
