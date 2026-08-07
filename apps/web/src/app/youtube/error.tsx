@@ -8,7 +8,7 @@ export default function YouTubeError({
   reset: () => void;
 }) {
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-center gap-4 bg-black p-6">
+    <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-center gap-4 bg-black p-4 sm:p-6">
       <p className="text-sm text-red-400">Не удалось загрузить YouTube</p>
       <button
         onClick={reset}

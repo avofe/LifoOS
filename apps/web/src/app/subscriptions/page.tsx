@@ -87,7 +87,7 @@ export default function SubscriptionsPage() {
     : undefined;
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 bg-black p-6">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 bg-black p-4 sm:p-6">
       {/* Header */}
           <div className="flex items-center justify-between">
             <div>
@@ -106,7 +106,7 @@ export default function SubscriptionsPage() {
 
           {/* Stats */}
           {stats && (
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <StatCard label="Всего подписок" value={String(stats.total)} />
               <StatCard
                 label="В месяц"

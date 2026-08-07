@@ -98,7 +98,7 @@ export default function AnalyticsPage() {
   const wc = data?.weekComparison;
 
   return (
-    <div className="mx-auto max-w-6xl flex-1 bg-zinc-900 px-8 py-6">
+    <div className="mx-auto max-w-6xl flex-1 bg-zinc-900 px-4 py-4 sm:px-8 sm:py-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 className="font-display text-xl font-bold text-zinc-100">

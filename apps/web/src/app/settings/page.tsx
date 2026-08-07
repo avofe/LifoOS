@@ -171,7 +171,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 bg-black p-6">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 bg-black p-4 sm:p-6">
       <h1 className="text-lg font-semibold text-zinc-200">Настройки</h1>
 
       {/* Server access key */}
@@ -183,7 +183,7 @@ export default function SettingsPage() {
           Мастер-ключ, который вводится при подключении к защищённому серверу.
           Хранится только на этом устройстве.
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <input
             type="password"
             value={accessKey}

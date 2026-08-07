@@ -35,8 +35,8 @@ export function SubscriptionCard(props: Props) {
   });
 
   return (
-    <div className="group flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 transition hover:border-zinc-700">
-      <div className="flex flex-col gap-1.5">
+    <div className="group flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 transition hover:border-zinc-700 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 flex-col gap-1.5">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-zinc-200">{props.name}</span>
           {props.category && (
@@ -52,7 +52,7 @@ export function SubscriptionCard(props: Props) {
         </div>
       </div>
 
-      <div className="flex flex-col items-end gap-2">
+      <div className="flex flex-col items-start gap-2 sm:items-end">
         <div className="flex items-center gap-2">
           <span className="font-mono text-base font-semibold text-zinc-200">
             {props.cost.toLocaleString("ru-RU")} ₽
@@ -61,7 +61,7 @@ export function SubscriptionCard(props: Props) {
             {pillText}
           </span>
         </div>
-        <div className="flex gap-2 opacity-0 transition group-hover:opacity-100">
+        <div className="flex gap-2 opacity-100 transition lg:opacity-0 lg:group-hover:opacity-100">
           <button
             onClick={() => props.onEdit(props.id)}
             className="rounded bg-zinc-800 px-2 py-1 text-[11px] text-zinc-400 hover:text-zinc-200"
