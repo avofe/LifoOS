@@ -44,6 +44,19 @@ export function devicesRouter(): Router {
     try {
       const { name, type } = req.body;
 
+      const existing = await prisma.device.findFirst({
+        where: { userId: USER_ID, name, type },
+      });
+      if (existing) {
+        res.status(200).json({
+          id: existing.id,
+          name: existing.name,
+          type: existing.type,
+          token: existing.token,
+        });
+        return;
+      }
+
       const device = await prisma.device.create({
         data: {
           name,
