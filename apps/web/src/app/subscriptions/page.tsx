@@ -5,6 +5,7 @@ import { apiGet, apiFetch } from "@/lib/api";
 import type { Subscription, SubsStats } from "@lifeos/types";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { SubscriptionFormModal } from "@/components/SubscriptionFormModal";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function SubscriptionsPage() {
   const [subs, setSubs] = useState<Subscription[]>([]);
@@ -89,20 +90,18 @@ export default function SubscriptionsPage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 bg-black p-4 sm:p-6">
       {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-lg font-semibold text-zinc-200">Подписки</h1>
-              <p className="text-xs text-zinc-500">
-                Управление регулярными платежами
-              </p>
-            </div>
-            <button
-              onClick={handleAdd}
-              className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-400"
-            >
-              + Добавить
-            </button>
-          </div>
+          <PageHeader
+            title="Подписки"
+            subtitle="Управление регулярными платежами"
+            actions={
+              <button
+                onClick={handleAdd}
+                className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition hover:brightness-110"
+              >
+                + Добавить
+              </button>
+            }
+          />
 
           {/* Stats */}
           {stats && (

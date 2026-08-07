@@ -5,6 +5,7 @@ import { apiGet, apiFetch } from "@/lib/api";
 import { useYouTube } from "@/hooks/useYouTube";
 import { useWatched } from "@/hooks/useWatched";
 import type { TrackedChannel, YouTubeSearchResult as SearchResult } from "@lifeos/types";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function YouTubePage() {
   const [channels, setChannels] = useState<TrackedChannel[]>([]);
@@ -63,44 +64,42 @@ export default function YouTubePage() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 bg-black p-4 sm:p-6">
       {/* Header */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-lg font-semibold text-zinc-200">
-                YouTube · новые видео
-              </h1>
-              <p className="text-xs text-zinc-500">
-                {loading
-                  ? "Загрузка..."
-                  : `${videos.length} видео · ${unwatchedCount} непросмотренных`}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {!loading && unwatchedCount > 0 && (
+          <PageHeader
+            title="YouTube · новые видео"
+            subtitle={
+              loading
+                ? "Загрузка..."
+                : `${videos.length} видео · ${unwatchedCount} непросмотренных`
+            }
+            actions={
+              <div className="flex flex-wrap items-center gap-2">
+                {!loading && unwatchedCount > 0 && (
+                  <button
+                    onClick={() => markAllWatched(videos.map((v) => v.id))}
+                    className="rounded-lg border border-zinc-800 bg-surface-2 px-4 py-2 text-sm text-zinc-500 transition hover:text-zinc-200"
+                  >
+                    Все просмотрено
+                  </button>
+                )}
                 <button
-                  onClick={() => markAllWatched(videos.map((v) => v.id))}
-                  className="rounded-lg border border-zinc-800 bg-surface-2 px-4 py-2 text-sm text-zinc-500 transition hover:text-zinc-200"
+                  onClick={() => setShowManage(!showManage)}
+                  className={`rounded-lg border px-4 py-2 text-sm transition ${
+                    showManage
+                      ? "border-accent bg-accent-bg text-accent-light"
+                      : "border-zinc-800 bg-surface-2 text-zinc-400 hover:text-zinc-200"
+                  }`}
                 >
-                  Все просмотрено
+                  {showManage ? "Готово" : "Каналы"}
                 </button>
-              )}
-              <button
-                onClick={() => setShowManage(!showManage)}
-                className={`rounded-lg border px-4 py-2 text-sm transition ${
-                  showManage
-                    ? "border-accent bg-accent-bg text-accent-light"
-                    : "border-zinc-800 bg-surface-2 text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                {showManage ? "Готово" : "Каналы"}
-              </button>
-              <a
-                href="https://youtube.com"
-                className="rounded-lg border border-zinc-800 bg-surface-2 px-4 py-2 text-sm text-zinc-400 transition hover:text-zinc-200"
-              >
-                Открыть YouTube
-              </a>
-            </div>
-          </div>
+                <a
+                  href="https://youtube.com"
+                  className="rounded-lg border border-zinc-800 bg-surface-2 px-4 py-2 text-sm text-zinc-400 transition hover:text-zinc-200"
+                >
+                  Открыть YouTube
+                </a>
+              </div>
+            }
+          />
 
           {/* Manage Channels */}
           {showManage && (

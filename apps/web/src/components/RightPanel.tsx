@@ -9,25 +9,13 @@ import type { TwitchStreamer, TimelineEvent, Subscription } from "@lifeos/types"
 export function RightPanel() {
   const [collapsed, setCollapsed] = useState(false);
   const [subs, setSubs] = useState<Subscription[]>([]);
+  const [subsLoading, setSubsLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [streamers, setStreamers] = useState<TwitchStreamer[] | null>(null);
-  const { videos: ytVideos } = useYouTube();
+  const { videos: ytVideos, loading: ytLoading } = useYouTube();
+  const [timelineLoading, setTimelineLoading] = useState(true);
 
   const { watched, markWatched } = useWatched();
-
-  useEffect(() => {
-    apiGet<Subscription[]>("/api/subscriptions?upcomingDays=14")
-      .then((data) => {
-        if (data) {
-          setSubs(data);
-          const monthly = data.reduce(
-            (acc, s) => acc + (s.billingCycle === "yearly" ? s.cost / 12 : s.cost),
-            0
-          );
-          setTotal(Math.round(monthly));
-        }
-      });
-  }, []);
 
   const fetchTwitch = useCallback(() => {
     apiGet<TwitchStreamer[]>("/api/twitch/streams")
@@ -42,10 +30,40 @@ export function RightPanel() {
 
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
 
-  useEffect(() => {
+  const fetchTimeline = useCallback(() => {
     apiGet<TimelineEvent[]>("/api/timeline")
-      .then((d) => setTimeline(d ?? []));
+      .then((d) => {
+        setTimeline(d ?? []);
+        setTimelineLoading(false);
+      });
   }, []);
+
+  useEffect(() => {
+    fetchTimeline();
+    const id = setInterval(fetchTimeline, 60000);
+    return () => clearInterval(id);
+  }, [fetchTimeline]);
+
+  const fetchSubs = useCallback(() => {
+    apiGet<Subscription[]>("/api/subscriptions?upcomingDays=14")
+      .then((data) => {
+        if (data) {
+          setSubs(data);
+          const monthly = data.reduce(
+            (acc, s) => acc + (s.billingCycle === "yearly" ? s.cost / 12 : s.cost),
+            0
+          );
+          setTotal(Math.round(monthly));
+        }
+        setSubsLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    fetchSubs();
+    const id = setInterval(fetchSubs, 60000);
+    return () => clearInterval(id);
+  }, [fetchSubs]);
 
   return (
     <div className="hidden h-full lg:flex">
@@ -55,7 +73,7 @@ export function RightPanel() {
         className={`flex h-full flex-shrink-0 items-center justify-center border-l border-zinc-800 bg-black text-zinc-500 transition hover:bg-zinc-900 hover:text-accent-light ${
           collapsed
             ? "w-[28px] text-[10px]"
-            : "w-[18px] text-[8px]"
+            : "w-[18px] text-[10px]"
         }`}
         title={collapsed ? "Показать панель" : "Скрыть панель"}
       >
@@ -74,7 +92,13 @@ export function RightPanel() {
       {/* Subscriptions */}
       <Section title="Подписки · платежи">
         <div className="flex flex-col">
-          {subs.length === 0 && (
+          {subsLoading ? (
+            <div className="flex flex-col gap-2 py-2">
+              <Skeleton className="h-[13px] w-3/4" />
+              <Skeleton className="h-[13px] w-1/2" />
+              <Skeleton className="h-[13px] w-2/3" />
+            </div>
+          ) : subs.length === 0 && (
             <p className="py-4 text-center text-xs text-zinc-600">
               Нет ближайших платежей
             </p>
@@ -92,7 +116,7 @@ export function RightPanel() {
               </div>
               <div className="flex items-center gap-[7px]">
                 {s.daysUntilPayment <= 2 && s.daysUntilPayment >= 0 && (
-                  <span className="rounded px-1.5 py-0.5 text-[9.5px] font-bold text-orange-400 bg-orange-500/10">
+                  <span className="rounded px-1.5 py-0.5 text-[11px] font-bold text-orange-400 bg-orange-500/10">
                     {s.daysUntilPayment === 0
                       ? "сегодня"
                       : `${s.daysUntilPayment} дн.`}
@@ -117,9 +141,10 @@ export function RightPanel() {
       <Section title="Twitch · отслеживаемые">
         <div className="flex flex-col gap-1.5">
           {streamers === null && (
-            <p className="py-2 text-center text-xs text-zinc-600">
-              Загрузка...
-            </p>
+            <div className="flex flex-col gap-1.5 py-1">
+              <Skeleton className="h-[52px] w-full" />
+              <Skeleton className="h-[52px] w-full" />
+            </div>
           )}
           {streamers !== null && streamers.length === 0 && (
             <p className="py-2 text-center text-xs text-zinc-600">
@@ -142,9 +167,15 @@ export function RightPanel() {
       {/* YouTube */}
       <Section title="YouTube · новые видео">
         <div className="flex flex-col">
-          {ytVideos.length === 0 && (
+          {ytLoading ? (
+            <div className="flex flex-col gap-2 py-1">
+              <Skeleton className="h-[48px] w-full" />
+              <Skeleton className="h-[48px] w-full" />
+              <Skeleton className="h-[48px] w-full" />
+            </div>
+          ) : ytVideos.length === 0 && (
             <p className="py-2 text-center text-xs text-zinc-600">
-              Загрузка...
+              Нет новых видео
             </p>
           )}
           {ytVideos.slice(0, 5).map((v) => {
@@ -217,10 +248,14 @@ export function RightPanel() {
 
 /* ── helpers ── */
 
+function Skeleton({ className }: { className?: string }) {
+  return <div className={`animate-pulse rounded bg-zinc-800/60 ${className ?? ""}`} />;
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="mb-2.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+      <div className="mb-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
         {title}
       </div>
       {children}
@@ -268,7 +303,7 @@ function StreamItem({
             {name}
           </span>
           {live && (
-            <span className="flex items-center gap-1 rounded bg-emerald-500/15 px-1 py-[1px] font-mono text-[9px] font-bold uppercase tracking-wider text-emerald-400">
+            <span className="flex items-center gap-1 rounded bg-emerald-500/15 px-1 py-[1px] font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-400">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
               live
             </span>
@@ -284,7 +319,7 @@ function StreamItem({
             {live}
           </span>
           {game && (
-            <span className="font-mono text-[9px] text-zinc-500">
+            <span className="font-mono text-[10px] text-zinc-500">
               {game.split("·").pop()?.trim()}
             </span>
           )}
@@ -312,7 +347,7 @@ function TimelineRow({
 
   return (
     <div className="flex items-start gap-2.5 py-2">
-      <div className="mt-[5px] w-[30px] flex-shrink-0 text-right font-mono text-[9px] text-zinc-500">
+      <div className="mt-[5px] w-[30px] flex-shrink-0 text-right font-mono text-[10px] text-zinc-500">
         {time}
       </div>
       <div className="mt-[7px] flex w-3.5 flex-shrink-0 items-center justify-center">

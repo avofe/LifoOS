@@ -56,8 +56,8 @@ export function AiBrief() {
 
       <div className="mb-3.5 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[9.5px] font-bold uppercase tracking-widest text-accent-light">
-            AI · Groq · llama-3.3-70b
+          <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-accent-light">
+            AI · Брифинг
             {type && (
               <span className="ml-2 text-zinc-500">
                 · {type === "morning" ? "утро" : "вечер"}
@@ -182,7 +182,7 @@ export function AiBrief() {
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <>
-      <div className="mb-2 mt-3.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-600 first:mt-0">
+      <div className="mb-2 mt-3.5 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-600 first:mt-0">
         {label}
       </div>
       <div className="flex flex-col gap-[7px]">{children}</div>

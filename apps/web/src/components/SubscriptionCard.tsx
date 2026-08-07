@@ -61,7 +61,7 @@ export function SubscriptionCard(props: Props) {
             {pillText}
           </span>
         </div>
-        <div className="flex gap-2 opacity-100 transition lg:opacity-0 lg:group-hover:opacity-100">
+        <div className="flex gap-2">
           <button
             onClick={() => props.onEdit(props.id)}
             className="rounded bg-zinc-800 px-2 py-1 text-[11px] text-zinc-400 hover:text-zinc-200"

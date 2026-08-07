@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { apiGet } from "@/lib/api";
 import type { TwitchStreamer } from "@lifeos/types";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function TwitchPage() {
   const [streamers, setStreamers] = useState<TwitchStreamer[]>([]);
@@ -28,24 +29,22 @@ export default function TwitchPage() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 bg-black p-4 sm:p-6">
       {/* Header */}
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h1 className="text-lg font-semibold text-zinc-200">
-                Twitch · стримеры
-              </h1>
-              <p className="text-xs text-zinc-500">
-                {loading
-                  ? "Загрузка..."
-                  : `${online.length} онлайн · ${offline.length} офлайн`}
-              </p>
-            </div>
-            <a
-              href="https://twitch.tv/directory/following"
-              className="rounded-lg border border-zinc-800 bg-surface-2 px-4 py-2 text-sm text-zinc-400 transition hover:text-zinc-200"
-            >
-              Открыть Twitch
-            </a>
-          </div>
+          <PageHeader
+            title="Twitch · стримеры"
+            subtitle={
+              loading
+                ? "Загрузка..."
+                : `${online.length} онлайн · ${offline.length} офлайн`
+            }
+            actions={
+              <a
+                href="https://twitch.tv/directory/following"
+                className="rounded-lg border border-zinc-800 bg-surface-2 px-4 py-2 text-sm text-zinc-400 transition hover:text-zinc-200"
+              >
+                Открыть Twitch
+              </a>
+            }
+          />
 
           {/* Loading */}
           {loading && (
@@ -125,7 +124,7 @@ function StreamerCard({ streamer }: { streamer: TwitchStreamer }) {
             {streamer.displayName}
           </span>
           {streamer.online && (
-            <span className="flex items-center gap-1 rounded bg-emerald-500/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-emerald-400">
+            <span className="flex items-center gap-1 rounded bg-emerald-500/15 px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-400">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
               LIVE
             </span>

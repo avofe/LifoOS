@@ -7,6 +7,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ReferenceLine,
   ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
+import { PageHeader } from "@/components/PageHeader";
 
 function fmt(totalSec: number): string {
   const h = Math.floor(totalSec / 3600);
@@ -98,29 +99,25 @@ export default function AnalyticsPage() {
   const wc = data?.weekComparison;
 
   return (
-    <div className="mx-auto max-w-6xl flex-1 bg-zinc-900 px-4 py-4 sm:px-8 sm:py-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 bg-black p-4 sm:p-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="font-display text-xl font-bold text-zinc-100">
-                Экранное время
-              </h1>
-              <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-zinc-500">
-                Аналитика
-              </p>
-            </div>
-            <select
-              value={deviceId}
-              onChange={(e) => setDeviceId(e.target.value)}
-              className="rounded-lg border border-zinc-800 bg-surface-2 px-3 py-2 text-sm text-zinc-200 outline-none transition focus:border-accent/60"
-            >
-              <option value="">Все устройства</option>
-              {devices.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
-          </div>
+        <PageHeader
+          title="Экранное время"
+          subtitle="Аналитика"
+        />
+        <select
+          value={deviceId}
+          onChange={(e) => setDeviceId(e.target.value)}
+          className="rounded-lg border border-zinc-800 bg-surface-2 px-3 py-2 text-sm text-zinc-200 outline-none transition focus:border-accent/60"
+        >
+          <option value="">Все устройства</option>
+          {devices.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
           {loading && (
             <p className="py-12 text-center text-sm text-zinc-600">
@@ -138,7 +135,7 @@ export default function AnalyticsPage() {
             <>
               <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="rounded-xl border border-zinc-800 bg-surface p-5">
-                  <div className="font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+                  <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                     Сегодня
                   </div>
                   <div className="mt-1.5 font-display text-2xl font-bold text-zinc-100">
@@ -146,7 +143,7 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
                 <div className="rounded-xl border border-zinc-800 bg-surface p-5">
-                  <div className="font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+                  <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                     Эта неделя
                   </div>
                   <div className="mt-1.5 font-display text-2xl font-bold text-zinc-100">
@@ -157,7 +154,7 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
                 <div className="rounded-xl border border-zinc-800 bg-surface p-5">
-                  <div className="font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+                  <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                     vs прошлая неделя
                   </div>
                   <div className="mt-1.5 flex items-baseline gap-2">
@@ -175,20 +172,20 @@ export default function AnalyticsPage() {
               </div>
 
               <div className="mb-6 rounded-xl border border-zinc-800 bg-surface p-5">
-                <div className="mb-4 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+                <div className="mb-4 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                   Дневная активность · 14 дней
                 </div>
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={data.daily} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
                     <XAxis
                       dataKey={(d: DailyEntry) => d.date.slice(5)}
-                      tick={{ fill: "#52526A", fontSize: 8, fontFamily: "Space Mono" }}
+                      tick={{ fill: "#52526A", fontSize: 10, fontFamily: "Space Mono" }}
                       axisLine={false}
                       tickLine={false}
                       interval={1}
                     />
                     <YAxis
-                      tick={{ fill: "#52526A", fontSize: 9, fontFamily: "Space Mono" }}
+                      tick={{ fill: "#52526A", fontSize: 10, fontFamily: "Space Mono" }}
                       axisLine={false}
                       tickLine={false}
                       tickFormatter={(v: number) => `${v / 3600}ч`}
@@ -203,7 +200,7 @@ export default function AnalyticsPage() {
                         value: "8ч",
                         position: "right",
                         fill: "#F07070",
-                        fontSize: 9,
+                        fontSize: 10,
                         fontFamily: "Space Mono",
                       }}
                     />
@@ -234,7 +231,7 @@ export default function AnalyticsPage() {
 
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
                 <div className="col-span-1 rounded-xl border border-zinc-800 bg-surface p-5 lg:col-span-2">
-                  <div className="mb-3 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+                  <div className="mb-3 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                     Распределение по приложениям
                   </div>
                   <ResponsiveContainer width="100%" height={260}>
@@ -258,7 +255,7 @@ export default function AnalyticsPage() {
                   </ResponsiveContainer>
                 </div>
                 <div className="col-span-1 rounded-xl border border-zinc-800 bg-surface p-5 lg:col-span-3">
-                  <div className="mb-3 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+                  <div className="mb-3 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                     Топ приложений (14 дней)
                   </div>
                   {data.topApps.length === 0 ? (
