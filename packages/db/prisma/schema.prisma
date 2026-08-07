@@ -21,6 +21,42 @@ model User {
   settings      Setting[]
   briefings     Briefing[]
   videoStates   UserVideoState[]
+  devices       Device[]
+  screenEvents  ScreenEvent[]
+}
+
+model Device {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String
+  type       String   @default("desktop") // desktop | mobile | tablet
+  os         String?
+  token      String   @unique
+  userId     String   @db.Uuid
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  screenEvents ScreenEvent[]
+
+  @@index([userId])
+}
+
+model ScreenEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  deviceId  String   @db.Uuid
+  userId    String   @db.Uuid
+  timestamp DateTime
+  duration  Int      // seconds
+  app       String
+  title     String?
+  createdAt DateTime @default(now())
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([deviceId, timestamp])
+  @@index([userId, timestamp])
 }
 
 model Event {

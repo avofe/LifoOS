@@ -13,13 +13,15 @@ import { screentimeRouter } from "./routes/screentime";
 import { createAiRouter } from "./routes/ai";
 import { videoStateRouter } from "./routes/video-state";
 import { createSettingsRouter } from "./routes/settings";
+import { devicesRouter } from "./routes/devices";
+import { requireAccessKey } from "./lib/auth";
 import { initGroq, reinitGroq } from "./lib/gemini";
 
 export const USER_ID = "00000000-0000-0000-0000-000000000001";
 const DEFAULT_YOUTUBE_KEY = "AIzaSyDeKpue25ScCac-8zITG7854Ktx1N3FQsM";
 
 const app = express();
-const port = process.env.PORT ?? 4000;
+const port = Number(process.env.PORT) || 4000;
 
 app.use(cors());
 app.use(express.json());
@@ -29,6 +31,7 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.use("/api", requireAccessKey);
 app.use("/api/subscriptions", subscriptionRouter);
 app.use("/api/twitch", createTwitchRouter());
 app.use("/api/youtube", createYouTubeRouter(DEFAULT_YOUTUBE_KEY));
@@ -37,6 +40,7 @@ app.use("/api/ai", createAiRouter());
 app.use("/api/screentime", screentimeRouter());
 app.use("/api/video-state", videoStateRouter);
 app.use("/api/settings", createSettingsRouter());
+app.use("/api/devices", devicesRouter());
 
 // Serve frontend static files (production)
 // STATIC_DIR env var is set by Tauri launcher in production
@@ -147,7 +151,7 @@ async function seed() {
       console.log("Groq API key loaded from DB");
     }
 
-  app.listen(port, () => {
-    console.log(`API running on http://localhost:${port}`);
+  app.listen(port, "0.0.0.0", () => {
+    console.log(`API running on http://0.0.0.0:${port}`);
   });
 });

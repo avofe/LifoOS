@@ -2,6 +2,31 @@ import { toast } from "sonner";
 
 type FetchOpts = RequestInit & { silent?: boolean };
 
+const ACCESS_KEY_STORAGE = "lifeos_access_key";
+
+let authRequiredHandler: (() => void) | null = null;
+
+export function setAuthRequiredHandler(fn: (() => void) | null) {
+  authRequiredHandler = fn;
+}
+
+export function getAccessKey(): string {
+  try {
+    return localStorage.getItem(ACCESS_KEY_STORAGE) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function setAccessKey(key: string) {
+  try {
+    if (key) localStorage.setItem(ACCESS_KEY_STORAGE, key);
+    else localStorage.removeItem(ACCESS_KEY_STORAGE);
+  } catch {
+    /* noop */
+  }
+}
+
 function shouldRetry(status: number): boolean {
   return status >= 500 || status === 429;
 }
@@ -18,6 +43,11 @@ export async function apiFetch<T = any>(url: string, opts?: FetchOpts): Promise<
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
+      const initHeaders = new Headers(init.headers);
+      const accessKey = getAccessKey();
+      if (accessKey) initHeaders.set("x-api-key", accessKey);
+      init.headers = initHeaders;
+
       const res = await fetch(url, init);
 
       if (res.ok) {
@@ -27,6 +57,12 @@ export async function apiFetch<T = any>(url: string, opts?: FetchOpts): Promise<
 
       const body = await res.json().catch(() => ({}));
       const detail = body.error ?? `Ошибка ${res.status}`;
+
+      if (res.status === 401) {
+        authRequiredHandler?.();
+        if (!silent) toast.error(detail);
+        throw new Error(detail);
+      }
 
       if (attempt < maxRetries && shouldRetry(res.status)) {
         await sleep(delays[attempt]);

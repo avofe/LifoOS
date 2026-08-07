@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { Sidebar } from "@/components/Sidebar";
+import { AccessKeyModal } from "@/components/AccessKeyModal";
 
 export const metadata: Metadata = {
   title: "LifeOS",
@@ -33,6 +34,7 @@ export default function RootLayout({
             },
           }}
         />
+        <AccessKeyModal />
       </body>
     </html>
   );

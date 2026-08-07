@@ -1,5 +1,20 @@
 import { Router } from "express";
+import { prisma } from "@lifeos/db";
 import { fetchScreenTime, fetchAnalytics } from "../lib/screentime";
+import { requireDeviceToken } from "../lib/auth";
+import { USER_ID } from "../index";
+import { validate, z } from "../validate";
+
+const screenEventSchema = z.object({
+  timestamp: z.string().min(1),
+  duration: z.number().int().min(1),
+  app: z.string().min(1).max(200),
+  title: z.string().max(500).optional().nullable(),
+});
+
+const ingestSchema = z.object({
+  events: z.array(screenEventSchema).max(5000),
+});
 
 const MOCK = {
   totalToday: "6ч 42м",
@@ -16,7 +31,7 @@ const MOCK = {
     { name: "YouTube", width: "72%", color: "#F07070", time: "2ч 18м" },
     { name: "VS Code", width: "50%", color: "#7B6FF0", time: "1ч 35м" },
     { name: "Браузер", width: "35%", color: "#52526A", time: "1ч 08м" },
-    { name: "Telegram", width: "18%", color: "#52526A", time: "34м" },
+    { name: "Telegram", width: "18%", color: "#2AABEE", time: "34м" },
   ],
 };
 
@@ -52,9 +67,10 @@ const MOCK_ANALYTICS = {
 export function screentimeRouter(): Router {
   const router = Router();
 
-  router.get("/", async (_req, res) => {
+  router.get("/", async (req, res) => {
     try {
-      const data = await fetchScreenTime();
+      const deviceId = typeof req.query.device === "string" ? req.query.device : undefined;
+      const data = await fetchScreenTime(deviceId);
       res.json(data ?? MOCK);
     } catch (err) {
       console.error("[screentime] GET /", err);
@@ -62,13 +78,48 @@ export function screentimeRouter(): Router {
     }
   });
 
-  router.get("/analytics", async (_req, res) => {
+  router.get("/analytics", async (req, res) => {
     try {
-      const data = await fetchAnalytics();
+      const deviceId = typeof req.query.device === "string" ? req.query.device : undefined;
+      const data = await fetchAnalytics(deviceId);
       res.json(data ?? MOCK_ANALYTICS);
     } catch (err) {
       console.error("[screentime] GET /analytics", err);
       res.json(MOCK_ANALYTICS);
+    }
+  });
+
+  router.post("/events", requireDeviceToken, validate(ingestSchema), async (req, res) => {
+    try {
+      const deviceId = req.deviceId!;
+      const { events } = req.body;
+
+      const rows = events.map((e: { timestamp: string; duration: number; app: string; title?: string | null }) => ({
+        deviceId,
+        userId: USER_ID,
+        timestamp: new Date(e.timestamp),
+        duration: e.duration,
+        app: e.app,
+        title: e.title ?? null,
+      }));
+
+      const batchSize = 500;
+      for (let i = 0; i < rows.length; i += batchSize) {
+        await prisma.screenEvent.createMany({
+          data: rows.slice(i, i + batchSize),
+          skipDuplicates: false,
+        });
+      }
+
+      await prisma.device.update({
+        where: { id: deviceId },
+        data: { lastSeenAt: new Date() },
+      });
+
+      res.json({ received: rows.length });
+    } catch (err) {
+      console.error("[screentime] POST /events", err);
+      res.status(500).json({ error: "Failed to ingest screen time events" });
     }
   });
 

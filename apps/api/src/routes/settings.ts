@@ -2,11 +2,13 @@ import { Router } from "express";
 import { prisma } from "@lifeos/db";
 import { USER_ID } from "../index";
 import { reinitGroq } from "../lib/gemini";
+import { setTimezoneCache } from "../lib/time";
 import { validate, z } from "../validate";
 
 const updateSettingsSchema = z.object({
   groqApiKey: z.string().optional(),
   youtubeApiKey: z.string().optional(),
+  timezone: z.string().optional(),
 });
 
 export function createSettingsRouter(): Router {
@@ -32,7 +34,7 @@ export function createSettingsRouter(): Router {
 
   router.put("/", validate(updateSettingsSchema), async (req, res) => {
     try {
-      const { groqApiKey, youtubeApiKey } = req.body;
+      const { groqApiKey, youtubeApiKey, timezone } = req.body;
 
       const upserts: Promise<any>[] = [];
 
@@ -55,6 +57,17 @@ export function createSettingsRouter(): Router {
             update: { value: youtubeApiKey },
           })
         );
+      }
+
+      if (timezone !== undefined) {
+        upserts.push(
+          prisma.setting.upsert({
+            where: { userId_key: { userId: USER_ID, key: "timezone" } },
+            create: { userId: USER_ID, key: "timezone", value: timezone },
+            update: { value: timezone },
+          })
+        );
+        setTimezoneCache(timezone);
       }
 
       await Promise.all(upserts);
