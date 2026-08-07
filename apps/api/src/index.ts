@@ -26,6 +26,7 @@ export const USER_ID = "00000000-0000-0000-0000-000000000001";
 const app = express();
 const port = Number(process.env.PORT) || 4000;
 
+app.set("etag", false);
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
