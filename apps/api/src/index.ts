@@ -94,6 +94,11 @@ async function seed() {
     console.log("Default user seeded");
   }
 
+  const seeded = await prisma.setting.findUnique({
+    where: { userId_key: { userId: USER_ID, key: "seeded" } },
+  });
+  if (seeded) return;
+
   const subCount = await prisma.subscription.count({ where: { userId: USER_ID } });
   if (subCount === 0) {
     const now = new Date();
@@ -129,6 +134,12 @@ async function seed() {
       process.exit(1);
     })
     .then(async () => {
+    const seededFlag = await prisma.setting.findUnique({
+      where: { userId_key: { userId: USER_ID, key: "seeded" } },
+    });
+    if (seededFlag) {
+      console.log("Seed flag present, skipping demo integrations");
+    } else {
     const ytInteg = await prisma.integration.findUnique({
       where: { userId_service: { userId: USER_ID, service: "youtube" } },
     });
@@ -170,6 +181,11 @@ async function seed() {
         },
       });
       console.log("Default Twitch streamers seeded");
+    }
+    await prisma.setting.create({
+      data: { userId: USER_ID, key: "seeded", value: "true" },
+    });
+    console.log("Seed flag set");
     }
 
     const envGroq = process.env.GROQ_API_KEY ?? "";
