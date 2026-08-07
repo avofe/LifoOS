@@ -104,6 +104,33 @@ export interface AnalyticsData {
   todayTotal: number;
 }
 
+/* ── Devices / multi-device breakdown ── */
+export type DeviceType = "desktop" | "mobile" | "tablet";
+
+export interface Device {
+  id: string;
+  name: string;
+  type: DeviceType;
+  os: string | null;
+  lastSeenAt: string;
+  createdAt: string;
+}
+
+export interface DeviceScreenTime {
+  id: string;
+  name: string;
+  type: DeviceType;
+  totalToday: string | null;
+  apps: AppStat[];
+}
+
+export interface DeviceBreakdown {
+  devices: DeviceScreenTime[];
+  totalToday: string | null;
+  weekDays: WeekDay[];
+  apps: AppStat[];
+}
+
 /* ── Timeline ── */
 export interface TimelineEvent {
   time: string;

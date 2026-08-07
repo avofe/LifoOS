@@ -540,3 +540,43 @@ export async function fetchAnalytics(deviceId?: string) {
   if (fromDb) return fromDb;
   return fetchAnalyticsFromAw();
 }
+
+export async function fetchDeviceBreakdown(): Promise<{
+  devices: {
+    id: string;
+    name: string;
+    type: string;
+    totalToday: string | null;
+    apps: { name: string; width: string; color: string; time: string }[];
+  }[];
+  totalToday: string | null;
+  weekDays: { label: string; height: string; over: boolean; today: boolean }[];
+  apps: { name: string; width: string; color: string; time: string }[];
+}> {
+  const devices = await prisma.device.findMany({
+    where: { userId: USER_ID },
+    orderBy: { lastSeenAt: "desc" },
+  });
+
+  const perDevice = await Promise.all(
+    devices.map((d) => fetchScreenTimeFromDb(d.id))
+  );
+
+  const aggregate = await fetchScreenTimeFromDb();
+
+  return {
+    devices: devices.map((d, i) => {
+      const st = perDevice[i];
+      return {
+        id: d.id,
+        name: d.name,
+        type: d.type,
+        totalToday: st?.totalToday ?? null,
+        apps: st?.apps ?? [],
+      };
+    }),
+    totalToday: aggregate?.totalToday ?? null,
+    weekDays: aggregate?.weekDays ?? [],
+    apps: aggregate?.apps ?? [],
+  };
+}

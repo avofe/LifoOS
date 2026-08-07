@@ -9,7 +9,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 export default function Home() {
   return (
     <>
-      <main className="flex flex-1 flex-col gap-4 border-r border-zinc-800 p-6">
+      <main className="flex flex-1 flex-col gap-4 border-r border-zinc-800 p-4 sm:p-6">
         <TopBar />
         <ErrorBoundary label="AI брифинг">
           <AiBrief />

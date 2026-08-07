@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "@lifeos/db";
-import { fetchScreenTime, fetchAnalytics } from "../lib/screentime";
+import { fetchScreenTime, fetchAnalytics, fetchDeviceBreakdown } from "../lib/screentime";
 import { requireDeviceToken } from "../lib/auth";
 import { USER_ID } from "../index";
 import { validate, z } from "../validate";
@@ -71,6 +71,10 @@ export function screentimeRouter(): Router {
     try {
       const deviceId = typeof req.query.device === "string" ? req.query.device : undefined;
       const data = await fetchScreenTime(deviceId);
+      if (!data && deviceId) {
+        res.status(404).json({ error: "No screen time data for this device" });
+        return;
+      }
       res.json(data ?? MOCK);
     } catch (err) {
       console.error("[screentime] GET /", err);
@@ -78,10 +82,24 @@ export function screentimeRouter(): Router {
     }
   });
 
+  router.get("/devices", async (_req, res) => {
+    try {
+      const data = await fetchDeviceBreakdown();
+      res.json(data);
+    } catch (err) {
+      console.error("[screentime] GET /devices", err);
+      res.status(500).json({ error: "Failed to fetch device breakdown" });
+    }
+  });
+
   router.get("/analytics", async (req, res) => {
     try {
       const deviceId = typeof req.query.device === "string" ? req.query.device : undefined;
       const data = await fetchAnalytics(deviceId);
+      if (!data && deviceId) {
+        res.status(404).json({ error: "No analytics data for this device" });
+        return;
+      }
       res.json(data ?? MOCK_ANALYTICS);
     } catch (err) {
       console.error("[screentime] GET /analytics", err);

@@ -44,7 +44,7 @@ export function RightPanel() {
   }, []);
 
   return (
-    <div className="flex h-full">
+    <div className="hidden h-full lg:flex">
       {/* Toggle button */}
       <button
         onClick={() => setCollapsed((c) => !c)}

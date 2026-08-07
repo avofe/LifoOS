@@ -28,7 +28,7 @@ export function StatsGrid() {
   const totalTracked = twitchData.length;
 
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <Stat
         label="Сегодня на экране"
         value={screenTime ? screenTime.totalToday : "..."}

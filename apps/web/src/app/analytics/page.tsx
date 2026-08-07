@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiGet } from "@/lib/api";
-import type { AnalyticsData, DailyEntry, DayApp } from "@lifeos/types";
+import type { AnalyticsData, DailyEntry, DayApp, Device } from "@lifeos/types";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ReferenceLine,
   ResponsiveContainer, PieChart, Pie, Cell,
@@ -77,17 +77,29 @@ function PieTooltip({ active, payload }: PieTooltipProps) {
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [deviceId, setDeviceId] = useState<string>("");
 
   useEffect(() => {
-    apiGet<AnalyticsData>("/api/screentime/analytics")
-      .then((d) => { setData(d); setLoading(false); });
+    apiGet<Device[]>("/api/devices").then((d) => setDevices(d ?? []));
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setData(null);
+    const query = deviceId ? `?device=${deviceId}` : "";
+    apiGet<AnalyticsData>(`/api/screentime/analytics${query}`)
+      .then((d) => { if (!cancelled) { setData(d); setLoading(false); } })
+      .catch(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [deviceId]);
 
   const wc = data?.weekComparison;
 
   return (
     <div className="mx-auto max-w-6xl flex-1 bg-zinc-900 px-8 py-6">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 className="font-display text-xl font-bold text-zinc-100">
                 Экранное время
@@ -96,6 +108,18 @@ export default function AnalyticsPage() {
                 Аналитика
               </p>
             </div>
+            <select
+              value={deviceId}
+              onChange={(e) => setDeviceId(e.target.value)}
+              className="rounded-lg border border-zinc-800 bg-surface-2 px-3 py-2 text-sm text-zinc-200 outline-none transition focus:border-accent/60"
+            >
+              <option value="">Все устройства</option>
+              {devices.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {loading && (
@@ -112,7 +136,7 @@ export default function AnalyticsPage() {
 
           {data && (
             <>
-              <div className="mb-6 grid grid-cols-3 gap-4">
+              <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="rounded-xl border border-zinc-800 bg-surface p-5">
                   <div className="font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500">
                     Сегодня
@@ -208,8 +232,8 @@ export default function AnalyticsPage() {
                 </ResponsiveContainer>
               </div>
 
-              <div className="grid grid-cols-5 gap-4">
-                <div className="col-span-2 rounded-xl border border-zinc-800 bg-surface p-5">
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+                <div className="col-span-1 rounded-xl border border-zinc-800 bg-surface p-5 lg:col-span-2">
                   <div className="mb-3 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500">
                     Распределение по приложениям
                   </div>
@@ -233,7 +257,7 @@ export default function AnalyticsPage() {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="col-span-3 rounded-xl border border-zinc-800 bg-surface p-5">
+                <div className="col-span-1 rounded-xl border border-zinc-800 bg-surface p-5 lg:col-span-3">
                   <div className="mb-3 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500">
                     Топ приложений (14 дней)
                   </div>

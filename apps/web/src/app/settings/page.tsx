@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, apiGet, getAccessKey, setAccessKey } from "@/lib/api";
+import type { Device, DeviceType } from "@lifeos/types";
 
 interface Settings {
   groqApiKey?: string;
@@ -13,23 +14,14 @@ interface Streamer {
   name: string;
 }
 
-interface Device {
-  id: string;
-  name: string;
-  type: string;
-  os: string | null;
-  lastSeenAt: string;
-  createdAt: string;
-}
-
 interface RegisteredDevice {
   id: string;
   name: string;
-  type: string;
+  type: DeviceType;
   token: string;
 }
 
-const DEVICE_TYPES = [
+const DEVICE_TYPES: { value: DeviceType; label: string }[] = [
   { value: "desktop", label: "Компьютер" },
   { value: "mobile", label: "Телефон" },
   { value: "tablet", label: "Планшет" },
@@ -46,7 +38,7 @@ export default function SettingsPage() {
   const [newName, setNewName] = useState("");
   const [devices, setDevices] = useState<Device[]>([]);
   const [devName, setDevName] = useState("");
-  const [devType, setDevType] = useState("desktop");
+  const [devType, setDevType] = useState<DeviceType>("desktop");
   const [registered, setRegistered] = useState<RegisteredDevice | null>(null);
   const [copied, setCopied] = useState(false);
   const [accessKey, setAccessKeyState] = useState("");
@@ -345,7 +337,7 @@ export default function SettingsPage() {
             <label className="mb-1 block text-[10px] text-zinc-600">Тип</label>
             <select
               value={devType}
-              onChange={(e) => setDevType(e.target.value)}
+              onChange={(e) => setDevType(e.target.value as DeviceType)}
               className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 outline-none focus:border-accent"
             >
               {DEVICE_TYPES.map((t) => (

@@ -69,9 +69,13 @@ export function ClockAndStatus() {
                 ? "bg-red-400 shadow-[0_0_4px_#F07070]"
                 : "bg-amber-400";
             return (
-              <div key={label} className="flex items-center gap-1 text-[10.5px] text-zinc-500">
+              <div
+                key={label}
+                title={label}
+                className="flex items-center gap-1 text-[10.5px] text-zinc-500"
+              >
                 <span className={`h-[5px] w-[5px] rounded-full ${dotClass}`} />
-                {label}
+                <span className="hidden sm:inline">{label}</span>
               </div>
             );
           })}
