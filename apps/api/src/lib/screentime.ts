@@ -1,6 +1,6 @@
 import { prisma } from "@lifeos/db";
 import { USER_ID } from "../index";
-import { getTimezone, getDayStart, getNextDayStart, fmtTime } from "./time";
+import { getTimezone, getDayStart, getNextDayStart, fmtTime, getWeekday } from "./time";
 
 const AW_BASE = "http://127.0.0.1:5600/api/0/";
 const DAY_LIMIT = 28800; // 8 hours
@@ -205,7 +205,7 @@ export async function fetchScreenTimeFromDb(deviceId?: string): Promise<{
     const d = dayStarts[i];
     const isToday = d.toISOString().slice(0, 10) === todayStart.toISOString().slice(0, 10);
     return {
-      label: dayLabels[d.getUTCDay() === 0 ? 6 : d.getUTCDay() - 1],
+      label: dayLabels[getWeekday(tz, d) === 0 ? 6 : getWeekday(tz, d) - 1],
       height: `${Math.max(Math.round((total / maxDay) * 100), 8)}%`,
       over: total > DAY_LIMIT,
       today: isToday,
@@ -275,7 +275,7 @@ export async function fetchAnalyticsFromDb(deviceId?: string): Promise<{
     const { total, apps } = aggregateDay(dayEvents);
     daily.push({
       date: ds.toISOString().slice(0, 10),
-      label: dayLabels[ds.getUTCDay()],
+      label: dayLabels[getWeekday(tz, ds)],
       total,
       apps,
     });

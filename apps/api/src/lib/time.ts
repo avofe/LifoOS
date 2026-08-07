@@ -71,6 +71,14 @@ export function getNextDayStart(dayStart: Date): Date {
   return next;
 }
 
+export function getWeekday(tz: string, at: Date): number {
+  const wd = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short" }).format(at);
+  const map: Record<string, number> = {
+    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+  };
+  return map[wd] ?? 0;
+}
+
 export function fmtTime(totalSec: number): string {
   const h = Math.floor(totalSec / 3600);
   const m = Math.round((totalSec % 3600) / 60);
