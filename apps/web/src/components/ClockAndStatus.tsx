@@ -1,12 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getAccessKey } from "@/lib/api";
 
 const DAYS = ["ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
 const MONTHS = [
   "ЯНВАРЯ", "ФЕВРАЛЯ", "МАРТА", "АПРЕЛЯ", "МАЯ", "ИЮНЯ",
   "ИЮЛЯ", "АВГУСТА", "СЕНТЯБРЯ", "ОКТЯБРЯ", "НОЯБРЯ", "ДЕКАБРЯ",
 ];
+
+function authedFetch(url: string) {
+  const headers: Record<string, string> = {};
+  const key = getAccessKey();
+  if (key) headers["x-api-key"] = key;
+  return fetch(url, { headers }).then((r) => r.ok);
+}
 
 type ServiceStatus = Record<string, boolean>;
 
@@ -43,10 +51,10 @@ export function ClockAndStatus() {
 
       const checks = apiOk
         ? await Promise.allSettled([
-            fetch("/api/youtube/videos").then((r) => r.ok),
-            fetch("/api/twitch/streams").then((r) => r.ok),
-            fetch("/api/screentime").then((r) => r.ok),
-            fetch("/api/subscriptions/stats").then((r) => r.ok),
+            authedFetch("/api/youtube/videos"),
+            authedFetch("/api/twitch/streams"),
+            authedFetch("/api/screentime"),
+            authedFetch("/api/subscriptions/stats"),
           ])
         : [];
 
