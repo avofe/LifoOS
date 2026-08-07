@@ -19,6 +19,7 @@ packages/db/generated/
 # Build artifacts (regenerated from source)
 apps/web/out/
 apps/desktop/resources/api/
+apps/desktop/src-tauri/gen/
 
 # IDE
 .vscode/

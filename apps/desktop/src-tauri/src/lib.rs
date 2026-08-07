@@ -1,12 +1,17 @@
-use std::process::{Child, Command};
+use std::process::Child;
 use std::sync::Mutex;
-use tauri::{Manager, Wry};
-use tauri::App;
+use tauri::Manager;
 use tauri::webview::WebviewWindowBuilder;
 use tauri::WebviewUrl;
 
+#[cfg(not(target_os = "android"))]
+use std::process::Command;
+#[cfg(not(target_os = "android"))]
+use tauri::{App, Wry};
+
 struct ApiProcess(Mutex<Option<Child>>);
 
+#[cfg(not(target_os = "android"))]
 fn start_api(api_dir: &std::path::Path) -> Option<Child> {
     let wrapper = api_dir.join("index.js");
     if !wrapper.exists() {
@@ -32,6 +37,7 @@ fn start_api(api_dir: &std::path::Path) -> Option<Child> {
     Some(child)
 }
 
+#[cfg(not(target_os = "android"))]
 fn wait_for_api() {
     let start = std::time::Instant::now();
     let client = reqwest::blocking::Client::builder()
@@ -55,6 +61,7 @@ fn wait_for_api() {
     eprintln!("[lifeos] API did not start in time — check Node.js and API bundle");
 }
 
+#[cfg(not(target_os = "android"))]
 fn find_api_dir(app: &App<Wry>) -> Option<std::path::PathBuf> {
     if cfg!(debug_assertions) {
         return None;
@@ -72,6 +79,7 @@ fn find_api_dir(app: &App<Wry>) -> Option<std::path::PathBuf> {
     }
 }
 
+#[cfg(not(target_os = "android"))]
 fn setup_api(app: &App<Wry>) -> Option<Child> {
     if cfg!(debug_assertions) {
         eprintln!("[lifeos] Dev mode — expecting API already running on :4000");
@@ -87,6 +95,9 @@ fn setup_api(app: &App<Wry>) -> Option<Child> {
 
 const LOCAL_URL: &str = "http://localhost:4000";
 
+#[cfg(target_os = "android")]
+const DEFAULT_REMOTE_URL: &str = "http://138.124.74.151:4000";
+
 fn resolve_remote_url() -> Option<String> {
     if let Ok(v) = std::env::var("LIFOOS_SERVER") {
         let v = v.trim().to_string();
@@ -95,12 +106,23 @@ fn resolve_remote_url() -> Option<String> {
         }
     }
 
-    let exe_dir = std::env::current_exe().ok()?.parent()?.to_path_buf();
-    let config = exe_dir.join("lifeos-server.txt");
-    if let Ok(content) = std::fs::read_to_string(&config) {
-        let v = content.lines().next().unwrap_or("").trim().to_string();
+    #[cfg(target_os = "android")]
+    {
+        let v = DEFAULT_REMOTE_URL.trim();
         if !v.is_empty() {
-            return Some(v);
+            return Some(v.to_string());
+        }
+    }
+
+    #[cfg(not(target_os = "android"))]
+    {
+        let exe_dir = std::env::current_exe().ok()?.parent()?.to_path_buf();
+        let config = exe_dir.join("lifeos-server.txt");
+        if let Ok(content) = std::fs::read_to_string(&config) {
+            let v = content.lines().next().unwrap_or("").trim().to_string();
+            if !v.is_empty() {
+                return Some(v);
+            }
         }
     }
 
@@ -117,13 +139,17 @@ fn ensure_url_scheme(url: &str) -> String {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_autostart::init(
-            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-            Some(vec![]),
-        ))
-        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_notification::init());
+
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_autostart::init(
+        tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+        Some(vec![]),
+    ));
+
+    builder
         .setup(|app| {
             let remote = resolve_remote_url().map(|u| ensure_url_scheme(&u));
             let (server_url, child) = match remote {
@@ -132,8 +158,15 @@ pub fn run() {
                     (url, None)
                 }
                 None => {
-                    let child = setup_api(app);
-                    (LOCAL_URL.to_string(), child)
+                    #[cfg(not(target_os = "android"))]
+                    {
+                        let child = setup_api(app);
+                        (LOCAL_URL.to_string(), child)
+                    }
+                    #[cfg(target_os = "android")]
+                    {
+                        (LOCAL_URL.to_string(), None)
+                    }
                 }
             };
 
@@ -148,37 +181,48 @@ pub fn run() {
                 }
             }
 
-            let _window = WebviewWindowBuilder::new(
+            #[allow(unused_mut)]
+            let mut win = WebviewWindowBuilder::new(
                 app,
                 "main",
                 WebviewUrl::External(server_url.parse().unwrap()),
             )
-            .title("LifeOS")
-            .inner_size(1280.0, 800.0)
-            .min_inner_size(900.0, 600.0)
-            .center()
-            .resizable(true)
-            .on_navigation(move |url| {
-                let host = url.host_str().unwrap_or("");
-                if allowed_hosts.iter().any(|h| h == host) {
-                    return true;
-                }
-                let url_str = url.as_str().to_string();
-                std::thread::spawn(move || {
-                    #[cfg(target_os = "windows")]
-                    {
-                        let _ = Command::new("cmd")
-                            .args(["/c", "start", &url_str])
-                            .spawn();
+            .title("LifeOS");
+
+            #[cfg(desktop)]
+            {
+                win = win
+                    .inner_size(1280.0, 800.0)
+                    .min_inner_size(900.0, 600.0)
+                    .center()
+                    .resizable(true);
+            }
+
+            let _window = win
+                .on_navigation(move |url| {
+                    let host = url.host_str().unwrap_or("");
+                    if allowed_hosts.iter().any(|h| h == host) {
+                        return true;
                     }
-                    #[cfg(not(target_os = "windows"))]
-                    {
-                        eprintln!("[lifeos] external link blocked (open helper not configured): {}", url_str);
-                    }
-                });
-                false
-            })
-            .build()?;
+                    let url_str = url.as_str().to_string();
+                    std::thread::spawn(move || {
+                        #[cfg(target_os = "windows")]
+                        {
+                            let _ = Command::new("cmd")
+                                .args(["/c", "start", &url_str])
+                                .spawn();
+                        }
+                        #[cfg(not(target_os = "windows"))]
+                        {
+                            eprintln!(
+                                "[lifeos] external link blocked (open helper not configured): {}",
+                                url_str
+                            );
+                        }
+                    });
+                    false
+                })
+                .build()?;
 
             println!("[lifeos] Window created, loading {}", server_url);
             Ok(())
