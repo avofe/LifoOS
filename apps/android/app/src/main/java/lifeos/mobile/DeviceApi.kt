@@ -74,4 +74,27 @@ object DeviceApi {
             return JSONObject(text).getInt("received")
         }
     }
+
+    fun fetchNotifications(server: String, token: String): List<AppNotification> {
+        val req = Request.Builder()
+            .url("$server/api/notifications/pending")
+            .get()
+            .header("x-device-token", token)
+            .build()
+
+        client.newCall(req).execute().use { resp ->
+            val text = resp.body?.string().orEmpty()
+            if (!resp.isSuccessful) throw ApiException(resp.code, "HTTP ${resp.code}: ${text.take(200)}")
+            val arr = JSONArray(text)
+            return (0 until arr.length()).map { i ->
+                val o = arr.getJSONObject(i)
+                AppNotification(
+                    id = o.getString("id"),
+                    channel = o.optString("channel", "limits"),
+                    title = o.getString("title"),
+                    body = o.getString("body"),
+                )
+            }
+        }
+    }
 }

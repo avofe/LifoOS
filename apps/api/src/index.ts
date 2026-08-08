@@ -16,6 +16,7 @@ import { createAiRouter } from "./routes/ai";
 import { videoStateRouter } from "./routes/video-state";
 import { createSettingsRouter } from "./routes/settings";
 import { devicesRouter } from "./routes/devices";
+import { createNotificationsRouter } from "./routes/notifications";
 import { requireAccessKey } from "./lib/auth";
 import { initGroq, reinitGroq } from "./lib/gemini";
 import { initYouTube, reinitYouTube } from "./lib/youtube";
@@ -72,6 +73,7 @@ app.use("/api/screentime", screentimeRouter());
 app.use("/api/video-state", videoStateRouter);
 app.use("/api/settings", createSettingsRouter());
 app.use("/api/devices", devicesRouter());
+app.use("/api/notifications", createNotificationsRouter());
 
 // Serve frontend static files (production)
 // STATIC_DIR env var is set by Tauri launcher in production

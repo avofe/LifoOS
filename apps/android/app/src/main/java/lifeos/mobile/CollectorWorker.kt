@@ -28,6 +28,7 @@ class CollectorWorker(context: Context, params: WorkerParameters) : CoroutineWor
                 Store.setLastSync(ctx, now)
                 Store.setLastSyncTime(ctx, now)
                 Store.setLastError(ctx, null)
+                fetchAndShowNotifications(ctx, server, token)
                 Result.success()
             } else {
                 var received: Int
@@ -49,11 +50,22 @@ class CollectorWorker(context: Context, params: WorkerParameters) : CoroutineWor
                 Store.setLastSync(ctx, now)
                 Store.setLastSyncTime(ctx, now)
                 Store.setLastError(ctx, null)
+                fetchAndShowNotifications(ctx, server, Store.token(ctx) ?: token)
                 Result.success()
             }
         } catch (e: Throwable) {
             Store.setLastError(ctx, e.message ?: e.javaClass.simpleName)
             Result.retry()
+        }
+    }
+
+    private fun fetchAndShowNotifications(ctx: Context, server: String, token: String) {
+        try {
+            val items = DeviceApi.fetchNotifications(server, token)
+            Notifier.initChannels(ctx)
+            Notifier.showNew(ctx, items)
+        } catch (_: Throwable) {
+            // notification fetch must not break the collector
         }
     }
 

@@ -35,7 +35,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.server.setText(Store.server(this))
+        Notifier.initChannels(this)
         refreshStatus()
+        requestNotificationPermission()
 
         binding.grant.setOnClickListener { openUsageAccessSettings() }
 
@@ -159,6 +161,16 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
         } catch (_: Exception) {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("package:$packageName")))
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+                PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
+            }
         }
     }
 
