@@ -148,7 +148,7 @@ export async function getAppMeta(): Promise<{
   return { aliases: appAliasesCache ?? {}, colors: appColorsCache ?? {} };
 }
 
-function categorize(app: string, title: string): { name: string; color: string; skip: boolean } {
+export function categorize(app: string, title: string): { name: string; color: string; skip: boolean } {
   if (isSystem(app, title)) return { name: "", color: "#52526A", skip: true };
 
   const aliases = appAliasesCache ?? {};
