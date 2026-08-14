@@ -83,6 +83,7 @@ export function createNotificationsRouter(): Router {
           userId: USER_ID,
           timestamp: { gte: yesterdayStart, lt: todayStart },
         },
+        select: { duration: true },
       });
       const yesterdaySec = yesterdayEvents.reduce((sum, e) => sum + e.duration, 0);
 

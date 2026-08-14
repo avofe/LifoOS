@@ -214,6 +214,7 @@ async function fetchEventsFromDb(
       ...(deviceId ? { deviceId } : {}),
     },
     orderBy: { timestamp: "asc" },
+    select: { timestamp: true, duration: true, app: true, title: true, deviceId: true },
   });
 }
 
@@ -760,7 +761,6 @@ export async function fetchRawApps(): Promise<{
       byKey.set(e.app, { key: e.app, seconds: e.duration, title: e.title ?? "" });
     }
   }
-
   const apps = Array.from(byKey.values())
     .sort((a, b) => b.seconds - a.seconds)
     .map((a) => {

@@ -9,6 +9,7 @@ import type {
   DeviceDayStat,
   HourlyData,
   ScreenLimitsData,
+  StreakStatus,
 } from "@lifeos/types";
 import {
   BarChart,
@@ -79,6 +80,7 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [hourly, setHourly] = useState<HourlyData | null>(null);
   const [limits, setLimits] = useState<ScreenLimitsData | null>(null);
+  const [streak, setStreak] = useState<StreakStatus | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [deviceId, setDeviceId] = useState("");
@@ -95,6 +97,7 @@ export default function AnalyticsPage() {
   useEffect(() => {
     apiGet<Device[]>("/api/devices").then((d) => setDevices(d ?? []));
     apiGet<ScreenLimitsData>("/api/screentime/limits").then((l) => setLimits(l));
+    apiGet<StreakStatus>("/api/screentime/streak").then((s) => setStreak(s));
   }, []);
 
   useEffect(() => {
@@ -308,6 +311,31 @@ export default function AnalyticsPage() {
               </span>
             </StatCard>
           </div>
+
+          {streak?.enabled && (
+            <div
+              className={`flex flex-wrap items-center gap-x-2 rounded-xl border px-4 py-2.5 text-[12px] ${
+                streak.streak > 0
+                  ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-300"
+                  : "border-zinc-800 bg-surface text-zinc-400"
+              }`}
+            >
+              <span>🔥</span>
+              <span className="font-mono text-[13px] font-bold">{streak.streak}</span>
+              <span>дней подряд</span>
+              {streak.record > 0 && (
+                <>
+                  <span className="text-zinc-700">·</span>
+                  <span className="text-zinc-500">
+                    рекорд <b className="font-mono text-zinc-300">{streak.record}</b>
+                  </span>
+                </>
+              )}
+              {streak.streak === 0 && (
+                <span className="text-red-400/90">— сегодня выше лимита</span>
+              )}
+            </div>
+          )}
 
           {/* daily stacked chart */}
           <Card
