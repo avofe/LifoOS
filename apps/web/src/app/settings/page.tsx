@@ -404,6 +404,22 @@ export default function SettingsPage() {
               placeholder="480"
               className="w-full max-w-[160px] rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-accent"
             />
+            <p className="mt-1 text-[11px] text-zinc-600">
+              Если оставить пустым — общий лимит считается как{" "}
+              {(() => {
+                const sum = Object.values(deviceLimits).reduce(
+                  (s, n) => s + (typeof n === "number" && n > 0 ? n : 0),
+                  0
+                );
+                return sum > 0 ? (
+                  <>
+                    <b className="font-mono text-zinc-400">сумма лимитов устройств ({sum} мин)</b>
+                  </>
+                ) : (
+                  "сумма лимитов устройств"
+                );
+              })()}
+            </p>
           </div>
 
           <div>

@@ -287,6 +287,7 @@ export default function AnalyticsPage() {
               limitMin={limitMin}
               usedSec={limitUsedSec}
               todayTotal={data.todayTotal}
+              source={limits?.total.source ?? null}
             />
 
             <StatCard label="Последние 7 дней" value={fmtTime(wc?.current ?? 0)}>
@@ -644,10 +645,12 @@ function LimitCard({
   limitMin,
   usedSec,
   todayTotal,
+  source,
 }: {
   limitMin: number | null;
   usedSec: number;
   todayTotal: number;
+  source?: "total" | "devices" | null;
 }) {
   const limitSec = limitMin !== null ? limitMin * 60 : null;
   const pct = limitSec ? Math.min(100, Math.round((todayTotal / limitSec) * 100)) : null;
@@ -690,7 +693,9 @@ function LimitCard({
                 : `осталось ${fmtTime(remaining)}`}
           </div>
           <div className="mt-0.5 text-[10.5px] text-zinc-500">
-            {limitSec === null ? "установи в настройках" : `из ${fmtTime(limitSec)}`}
+            {limitSec === null
+              ? "установи в настройках"
+              : `из ${fmtTime(limitSec)}${source === "devices" ? " · сумма устройств" : ""}`}
           </div>
         </div>
       </div>

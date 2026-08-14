@@ -678,7 +678,7 @@ export async function computeForecast(usedSec: number): Promise<ScreenTimeForeca
 }
 
 export async function fetchScreenLimits(): Promise<{
-  total: { limitMin: number | null; usedSec: number; over: boolean };
+  total: { limitMin: number | null; usedSec: number; over: boolean; source: "total" | "devices" | null };
   apps: { name: string; limitMin: number | null; usedSec: number; over: boolean }[];
   devices: { id: string; name: string; type: string; limitMin: number | null; usedSec: number; over: boolean }[];
 }> {
@@ -695,8 +695,11 @@ export async function fetchScreenLimits(): Promise<{
   const map: Record<string, any> = {};
   for (const s of settings) map[s.key] = s.value;
 
-  const totalLimitMin =
-    typeof map.screenLimitTotal === "number" ? map.screenLimitTotal : null;
+  const explicitTotal =
+    typeof map.screenLimitTotal === "number" && map.screenLimitTotal > 0
+      ? map.screenLimitTotal
+      : null;
+
   const appLimits: Record<string, number> =
     map.screenLimitApps && typeof map.screenLimitApps === "object"
       ? (map.screenLimitApps as Record<string, number>)
@@ -750,11 +753,19 @@ export async function fetchScreenLimits(): Promise<{
     })
     .sort((a, b) => b.usedSec - a.usedSec);
 
+  const sumDeviceLimits = Object.values(deviceLimits).filter(
+    (n): n is number => typeof n === "number" && n > 0
+  ).reduce((s, n) => s + n, 0);
+
   return {
     total: {
-      limitMin: totalLimitMin,
+      limitMin: explicitTotal ?? (sumDeviceLimits > 0 ? sumDeviceLimits : null),
       usedSec: totalUsedSec,
-      over: totalLimitMin !== null && totalUsedSec > totalLimitMin * 60,
+      over:
+        (explicitTotal !== null
+          ? totalUsedSec > explicitTotal * 60
+          : sumDeviceLimits > 0 && totalUsedSec > sumDeviceLimits * 60),
+      source: explicitTotal !== null ? "total" : sumDeviceLimits > 0 ? "devices" : null,
     },
     apps,
     devices,

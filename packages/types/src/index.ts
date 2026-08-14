@@ -191,11 +191,13 @@ export interface ScreenLimitInfo {
   limitMin: number | null;
   usedSec: number;
   over: boolean;
+  source?: "total" | "devices" | null;
 }
 
 export interface ScreenLimitsData {
   total: ScreenLimitInfo;
   apps: { name: string; limitMin: number | null; usedSec: number; over: boolean }[];
+  devices: { id: string; name: string; type: DeviceType; limitMin: number | null; usedSec: number; over: boolean }[];
 }
 
 /* ── Raw apps (rename / recolor) ── */

@@ -157,6 +157,7 @@ export function ScreenTimeSection() {
               </div>
               <span className="shrink-0 font-mono text-[10px] text-zinc-400">
                 {limitPct}% · лимит {limit?.limitMin ? fmtDuration(limit.limitMin * 60) : ""}
+                {limits?.total.source === "devices" ? " (устройства)" : ""}
               </span>
             </div>
           )}
