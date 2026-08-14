@@ -183,7 +183,7 @@ export function ScreenTimeCard() {
           <div className="mt-3 flex flex-col gap-[5px]">
             {data.apps.map((a) => (
               <div key={a.name} className="flex items-center gap-2">
-                <span className="w-[90px] flex-shrink-0 text-xs text-zinc-200">
+                <span className="w-[90px] flex-shrink-0 truncate text-xs text-zinc-200" title={a.name}>
                   {a.name}
                 </span>
                 <div className="h-1 flex-1 overflow-hidden rounded-sm bg-zinc-800">

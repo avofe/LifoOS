@@ -1,6 +1,6 @@
 import { prisma } from "@lifeos/db";
 import { USER_ID } from "../index";
-import { getTimezone, getDayStart, getNextDayStart, fmtTime, getWeekday } from "./time";
+import { getTimezone, getDayStart, getNextDayStart, fmtTime, getWeekday, getHourOfDay } from "./time";
 
 const AW_BASE = "http://127.0.0.1:5600/api/0/";
 const DAY_LIMIT = 28800; // 8 hours
@@ -129,6 +129,23 @@ interface DbEvent {
   duration: number;
   app: string;
   title: string | null;
+  deviceId: string;
+}
+
+const DEVICE_COLORS = ["#7B6FF0", "#3ECF6E", "#F5A623", "#3B9EFF", "#F07070", "#2AABEE"];
+
+async function fetchDeviceMeta(): Promise<
+  Map<string, { id: string; name: string; type: string; color: string }>
+> {
+  const devices = await prisma.device.findMany({
+    where: { userId: USER_ID },
+    orderBy: { lastSeenAt: "desc" },
+  });
+  const meta = new Map<string, { id: string; name: string; type: string; color: string }>();
+  devices.forEach((d, i) => {
+    meta.set(d.id, { id: d.id, name: d.name, type: d.type, color: DEVICE_COLORS[i % DEVICE_COLORS.length] });
+  });
+  return meta;
 }
 
 async function fetchEventsFromDb(
@@ -246,38 +263,64 @@ export async function fetchScreenTimeFromDb(deviceId?: string): Promise<{
   };
 }
 
-export async function fetchAnalyticsFromDb(deviceId?: string): Promise<{
-  daily: { date: string; label: string; total: number; apps: { name: string; color: string; seconds: number }[] }[];
+export async function fetchAnalyticsFromDb(
+  deviceId?: string,
+  daysBack = 14
+): Promise<{
+  daily: { date: string; label: string; total: number; apps: { name: string; color: string; seconds: number }[]; devices: { id: string; name: string; type: string; color: string; seconds: number }[] }[];
   topApps: { name: string; color: string; total: number }[];
-  weekComparison: { current: number; previous: number; diffPercent: number };
+  weekComparison: { current: number; previous: number; diffPercent: number | null };
   todayTotal: number;
 } | null> {
   const tz = await getTimezone();
   const now = new Date();
 
-  const firstDay = getDayStart(-13, tz, now);
+  daysBack = Math.max(7, Math.min(30, daysBack));
+  const firstDay = getDayStart(-(daysBack - 1), tz, now);
   const todayStart = getDayStart(0, tz, now);
   const end = getNextDayStart(todayStart);
 
   const events = await fetchEventsFromDb(deviceId, firstDay, end);
   if (events.length === 0) return null;
 
+  const deviceMeta = await fetchDeviceMeta();
   const dayLabels = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
 
-  const daily: { date: string; label: string; total: number; apps: { name: string; color: string; seconds: number }[] }[] = [];
+  const daily: {
+    date: string;
+    label: string;
+    total: number;
+    apps: { name: string; color: string; seconds: number }[];
+    devices: { id: string; name: string; type: string; color: string; seconds: number }[];
+  }[] = [];
 
-  for (let i = -13; i <= 0; i++) {
+  for (let i = -(daysBack - 1); i <= 0; i++) {
     const ds = getDayStart(i, tz, now);
     const de = getNextDayStart(ds);
     const dayEvents = events.filter(
       (e) => e.timestamp.getTime() >= ds.getTime() && e.timestamp.getTime() < de.getTime()
     );
     const { total, apps } = aggregateDay(dayEvents);
+
+    const devTotals = new Map<string, { id: string; name: string; type: string; color: string; seconds: number }>();
+    for (const e of dayEvents) {
+      if (e.duration < 1) continue;
+      const meta = deviceMeta.get(e.deviceId);
+      if (!meta) continue;
+      const cur = devTotals.get(e.deviceId);
+      if (cur) {
+        cur.seconds += e.duration;
+      } else {
+        devTotals.set(e.deviceId, { ...meta, seconds: e.duration });
+      }
+    }
+
     daily.push({
       date: ds.toISOString().slice(0, 10),
       label: dayLabels[getWeekday(tz, ds)],
       total,
       apps,
+      devices: Array.from(devTotals.values()).sort((a, b) => b.seconds - a.seconds),
     });
   }
 
@@ -297,22 +340,18 @@ export async function fetchAnalyticsFromDb(deviceId?: string): Promise<{
     .sort((a, b) => b.total - a.total)
     .slice(0, 10);
 
-  const weekTotals = [0, 0];
-  for (let i = 0; i < daily.length; i++) {
-    const dayNum = Math.floor(i / 7);
-    if (dayNum === 0) weekTotals[0] += daily[i].total;
-    else weekTotals[1] += daily[i].total;
-  }
+  const last7 = daily.slice(-7).reduce((s, d) => s + d.total, 0);
+  const prev7 = daily.length >= 14 ? daily.slice(-14, -7).reduce((s, d) => s + d.total, 0) : 0;
 
   return {
     daily,
     topApps,
     weekComparison: {
-      current: weekTotals[1],
-      previous: weekTotals[0],
-      diffPercent: weekTotals[0] > 0
-        ? Math.round(((weekTotals[1] - weekTotals[0]) / weekTotals[0]) * 100)
-        : 0,
+      current: last7,
+      previous: prev7,
+      diffPercent: prev7 > 0
+        ? Math.round(((last7 - prev7) / prev7) * 100)
+        : null,
     },
     todayTotal: daily[daily.length - 1]?.total ?? 0,
   };
@@ -425,10 +464,12 @@ export async function fetchScreenTimeFromAw(): Promise<{
   };
 }
 
-export async function fetchAnalyticsFromAw(): Promise<{
-  daily: { date: string; label: string; total: number; apps: { name: string; color: string; seconds: number }[] }[];
+export async function fetchAnalyticsFromAw(
+  daysBack = 14
+): Promise<{
+  daily: { date: string; label: string; total: number; apps: { name: string; color: string; seconds: number }[]; devices: { id: string; name: string; type: string; color: string; seconds: number }[] }[];
   topApps: { name: string; color: string; total: number }[];
-  weekComparison: { current: number; previous: number; diffPercent: number };
+  weekComparison: { current: number; previous: number; diffPercent: number | null };
   todayTotal: number;
 } | null> {
   const now = new Date();
@@ -442,7 +483,7 @@ export async function fetchAnalyticsFromAw(): Promise<{
 
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  const daysBack = 14;
+  daysBack = Math.max(7, Math.min(30, daysBack));
   const dayStarts: Date[] = [];
   for (let i = daysBack - 1; i >= 0; i--) {
     const d = new Date(startOfToday);
@@ -458,7 +499,7 @@ export async function fetchAnalyticsFromAw(): Promise<{
 
   const dayLabels = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
 
-  const daily: { date: string; label: string; total: number; apps: { name: string; color: string; seconds: number }[] }[] = dayStarts.map((dayStart) => {
+  const daily: { date: string; label: string; total: number; apps: { name: string; color: string; seconds: number }[]; devices: { id: string; name: string; type: string; color: string; seconds: number }[] }[] = dayStarts.map((dayStart) => {
     const dayEnd = new Date(dayStart);
     dayEnd.setDate(dayEnd.getDate() + 1);
 
@@ -491,6 +532,7 @@ export async function fetchAnalyticsFromAw(): Promise<{
       label: dayLabels[dayStart.getDay()],
       total,
       apps,
+      devices: [],
     };
   });
 
@@ -510,22 +552,18 @@ export async function fetchAnalyticsFromAw(): Promise<{
     .sort((a, b) => b.total - a.total)
     .slice(0, 10);
 
-  const weekTotals = [0, 0];
-  for (let i = 0; i < daily.length; i++) {
-    const dayNum = Math.floor(i / 7);
-    if (dayNum === 0) weekTotals[0] += daily[i].total;
-    else weekTotals[1] += daily[i].total;
-  }
+  const last7 = daily.slice(-7).reduce((s, d) => s + d.total, 0);
+  const prev7 = daily.length >= 14 ? daily.slice(-14, -7).reduce((s, d) => s + d.total, 0) : 0;
 
   return {
     daily,
     topApps,
     weekComparison: {
-      current: weekTotals[1],
-      previous: weekTotals[0],
-      diffPercent: weekTotals[0] > 0
-        ? Math.round(((weekTotals[1] - weekTotals[0]) / weekTotals[0]) * 100)
-        : 0,
+      current: last7,
+      previous: prev7,
+      diffPercent: prev7 > 0
+        ? Math.round(((last7 - prev7) / prev7) * 100)
+        : null,
     },
     todayTotal: daily[daily.length - 1]?.total ?? 0,
   };
@@ -600,10 +638,134 @@ export async function fetchScreenTime(deviceId?: string) {
   return fetchScreenTimeFromAw();
 }
 
-export async function fetchAnalytics(deviceId?: string) {
-  const fromDb = await fetchAnalyticsFromDb(deviceId);
+export async function fetchAnalytics(deviceId?: string, daysBack = 14) {
+  const fromDb = await fetchAnalyticsFromDb(deviceId, daysBack);
   if (fromDb) return fromDb;
-  return fetchAnalyticsFromAw();
+  return fetchAnalyticsFromAw(daysBack);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Hourly heatmap (DB)
+// ─────────────────────────────────────────────────────────────
+
+export async function fetchHourlyFromDb(
+  deviceId?: string,
+  daysBack = 14
+): Promise<{
+  days: { date: string; label: string; hours: { hour: number; total: number }[] }[];
+  maxHourTotal: number;
+} | null> {
+  const tz = await getTimezone();
+  const now = new Date();
+
+  daysBack = Math.max(7, Math.min(30, daysBack));
+  const firstDay = getDayStart(-(daysBack - 1), tz, now);
+  const todayStart = getDayStart(0, tz, now);
+  const end = getNextDayStart(todayStart);
+
+  const events = await fetchEventsFromDb(deviceId, firstDay, end);
+  if (events.length === 0) return null;
+
+  const dayLabels = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+  const days: { date: string; label: string; hours: { hour: number; total: number }[] }[] = [];
+
+  for (let i = -(daysBack - 1); i <= 0; i++) {
+    const ds = getDayStart(i, tz, now);
+    const de = getNextDayStart(ds);
+    const hours = new Array(24).fill(0) as number[];
+
+    for (const e of events) {
+      const t = e.timestamp.getTime();
+      if (t >= ds.getTime() && t < de.getTime()) {
+        const hour = getHourOfDay(tz, e.timestamp);
+        if (hour >= 0 && hour <= 23) hours[hour] += e.duration;
+      }
+    }
+
+    days.push({
+      date: ds.toISOString().slice(0, 10),
+      label: dayLabels[getWeekday(tz, ds)],
+      hours: hours.map((total, hour) => ({ hour, total })),
+    });
+  }
+
+  let maxHourTotal = 1;
+  for (const d of days) {
+    for (const h of d.hours) {
+      if (h.total > maxHourTotal) maxHourTotal = h.total;
+    }
+  }
+
+  return { days, maxHourTotal };
+}
+
+export async function fetchHourlyFromAw(
+  daysBack = 14
+): Promise<{
+  days: { date: string; label: string; hours: { hour: number; total: number }[] }[];
+  maxHourTotal: number;
+} | null> {
+  const now = new Date();
+  const buckets = await fetchBuckets().catch(() => null);
+  if (!buckets) return null;
+
+  const windowBucketId = Object.keys(buckets).find(
+    (id) => id.includes("aw-watcher-window") || id.includes("aw-watcher-windows")
+  );
+  if (!windowBucketId) return null;
+
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  daysBack = Math.max(7, Math.min(30, daysBack));
+
+  const dayStarts: Date[] = [];
+  for (let i = daysBack - 1; i >= 0; i--) {
+    const d = new Date(startOfToday);
+    d.setDate(d.getDate() - i);
+    dayStarts.push(d);
+  }
+
+  const endDate = new Date(startOfToday);
+  endDate.setDate(endDate.getDate() + 1);
+
+  const events = await fetchAwEvents(windowBucketId, dayStarts[0].toISOString(), endDate.toISOString()).catch(() => []);
+  if (events.length === 0) return null;
+
+  const dayLabels = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+
+  const days = dayStarts.map((dayStart) => {
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    const hours = new Array(24).fill(0) as number[];
+
+    for (const e of events) {
+      const t = new Date(e.timestamp).getTime();
+      if (t >= dayStart.getTime() && t < dayEnd.getTime()) {
+        const hour = getHourOfDay("Europe/Moscow", new Date(e.timestamp));
+        if (hour >= 0 && hour <= 23) hours[hour] += e.duration;
+      }
+    }
+
+    return {
+      date: dayStart.toISOString().slice(0, 10),
+      label: dayLabels[dayStart.getDay()],
+      hours: hours.map((total, hour) => ({ hour, total })),
+    };
+  });
+
+  let maxHourTotal = 1;
+  for (const d of days) {
+    for (const h of d.hours) {
+      if (h.total > maxHourTotal) maxHourTotal = h.total;
+    }
+  }
+
+  return { days, maxHourTotal };
+}
+
+export async function fetchHourly(deviceId?: string, daysBack = 14) {
+  const fromDb = await fetchHourlyFromDb(deviceId, daysBack);
+  if (fromDb) return fromDb;
+  return fetchHourlyFromAw(daysBack);
 }
 
 export async function fetchDeviceBreakdown(): Promise<{

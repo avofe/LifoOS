@@ -97,11 +97,20 @@ export interface DayApp {
   seconds: number;
 }
 
+export interface DeviceDayStat {
+  id: string;
+  name: string;
+  type: DeviceType;
+  color: string;
+  seconds: number;
+}
+
 export interface DailyEntry {
   date: string;
   label: string;
   total: number;
   apps: DayApp[];
+  devices: DeviceDayStat[];
 }
 
 export interface TopApp {
@@ -113,7 +122,7 @@ export interface TopApp {
 export interface WeekComparison {
   current: number;
   previous: number;
-  diffPercent: number;
+  diffPercent: number | null;
 }
 
 export interface AnalyticsData {
@@ -121,6 +130,23 @@ export interface AnalyticsData {
   topApps: TopApp[];
   weekComparison: WeekComparison;
   todayTotal: number;
+}
+
+/* ── Hourly heatmap ── */
+export interface HourlyCell {
+  hour: number;
+  total: number;
+}
+
+export interface HourlyDay {
+  date: string;
+  label: string;
+  hours: HourlyCell[];
+}
+
+export interface HourlyData {
+  days: HourlyDay[];
+  maxHourTotal: number;
 }
 
 /* ── Devices / multi-device breakdown ── */

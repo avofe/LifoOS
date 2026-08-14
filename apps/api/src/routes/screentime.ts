@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "@lifeos/db";
-import { fetchScreenTime, fetchAnalytics, fetchDeviceBreakdown, fetchScreenLimits } from "../lib/screentime";
+import { fetchScreenTime, fetchAnalytics, fetchDeviceBreakdown, fetchScreenLimits, fetchHourly } from "../lib/screentime";
 import { requireDeviceToken } from "../lib/auth";
 import { USER_ID } from "../index";
 import { validate, z } from "../validate";
@@ -59,7 +59,8 @@ export function screentimeRouter(): Router {
   router.get("/analytics", async (req, res) => {
     try {
       const deviceId = typeof req.query.device === "string" ? req.query.device : undefined;
-      const data = await fetchAnalytics(deviceId);
+      const days = Number(req.query.days) || 14;
+      const data = await fetchAnalytics(deviceId, days);
       if (!data && deviceId) {
         res.status(404).json({ error: "No analytics data for this device" });
         return;
@@ -68,6 +69,18 @@ export function screentimeRouter(): Router {
     } catch (err) {
       console.error("[screentime] GET /analytics", err);
       res.json(null);
+    }
+  });
+
+  router.get("/hourly", async (req, res) => {
+    try {
+      const deviceId = typeof req.query.device === "string" ? req.query.device : undefined;
+      const days = Math.max(7, Math.min(30, Number(req.query.days) || 14));
+      const data = await fetchHourly(deviceId, days);
+      res.json(data ?? { days: [], maxHourTotal: 1 });
+    } catch (err) {
+      console.error("[screentime] GET /hourly", err);
+      res.json({ days: [], maxHourTotal: 1 });
     }
   });
 

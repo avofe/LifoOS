@@ -79,6 +79,12 @@ export function getWeekday(tz: string, at: Date): number {
   return map[wd] ?? 0;
 }
 
+export function getHourOfDay(tz: string, at: Date): number {
+  return Number(
+    new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", hourCycle: "h23" }).format(at)
+  );
+}
+
 export function fmtTime(totalSec: number): string {
   const h = Math.floor(totalSec / 3600);
   const m = Math.round((totalSec % 3600) / 60);
