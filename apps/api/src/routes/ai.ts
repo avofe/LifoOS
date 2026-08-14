@@ -2,9 +2,10 @@ import { Router } from "express";
 import { prisma } from "@lifeos/db";
 import { USER_ID } from "../index";
 import { queryGroq } from "../lib/gemini";
-import { fetchScreenTime } from "../lib/screentime";
+import { fetchScreenTime, fetchAnalytics } from "../lib/screentime";
 import { fetchWeather, getWeatherLocation } from "../lib/weather";
 import { validate, chatMessageSchema } from "../validate";
+import { fmtTime } from "../lib/time";
 
 async function collectContext() {
   const now = new Date();
@@ -169,11 +170,98 @@ ${subsStr}
 - Только JSON, без markdown`;
 }
 
+function buildWeeklyPrompt(
+  ctx: Awaited<ReturnType<typeof collectContext>>,
+  analytics: Awaited<ReturnType<typeof fetchAnalytics>>
+): string {
+  const subsStr =
+    ctx.subscriptions.length > 0
+      ? ctx.subscriptions.map(subLabel).join("\n")
+      : "нет подписок";
+
+  const ytStr = ctx.channels.length > 0 ? ctx.channels.join(", ") : "нет";
+  const twStr = ctx.streamers.length > 0 ? ctx.streamers.join(", ") : "нет";
+
+  const dailyStr = analytics?.daily.length
+    ? analytics.daily.map((d) => `${d.date}: ${fmtTime(d.total)}`).join(", ")
+    : "нет данных";
+
+  const cmp = analytics?.weekComparison;
+  const cmpStr =
+    cmp && cmp.diffPercent !== null
+      ? `${cmp.diffPercent > 0 ? "+" : ""}${cmp.diffPercent}% (${fmtTime(cmp.current)} против ${fmtTime(cmp.previous)} за прошлую неделю)`
+      : "нет данных для сравнения";
+
+  const topAppsStr =
+    analytics && analytics.topApps.length > 0
+      ? analytics.topApps
+          .slice(0, 5)
+          .map((a) => `${a.name}: ${fmtTime(a.total)}`)
+          .join(", ")
+      : "нет данных";
+
+  const statusValues = '"upcoming" | "critical" | "overdue"';
+
+  return `Данные дашборда LifoOS (недельный итог, последние 7 дней):
+- Подписки:
+${subsStr}
+
+- YouTube каналы: ${ytStr}
+- Twitch стримеры: ${twStr}
+- Экранное время за неделю (дата: время): ${dailyStr}
+- Динамика неделя к неделе: ${cmpStr}
+- Топ приложений за неделю: ${topAppsStr}
+
+Сформируй недельную сводку в формате JSON:
+{
+  "summary": "итог недели, 2-3 предложения",
+  "subscriptions": [
+    { "name": "Название", "amount": "сумма", "daysLeft": число, "status": ${statusValues} }
+  ],
+  "youtube": "коротко про каналы",
+  "twitch": "коротко про стримеров",
+  "screentime": "анализ недели — динамика, топ, вывод",
+  "quickActions": ["дело 1", "дело 2"]
+}
+
+Правила:
+- summary — итог недели: что было важно, 2-3 предложения
+- subscriptions — данные как есть
+- youtube — 1 фраза
+- twitch — 1 фраза
+- screentime — анализ недели, не просто сумма: динамика, топ-приложения, вывод
+- quickActions — 1-3 дела на следующую неделю
+- Только JSON, без markdown`;
+}
+
 export function createAiRouter(): Router {
   const router: Router = Router();
 
-  router.get("/brief/latest", async (_req, res) => {
+  router.get("/brief/latest", async (req, res) => {
     try {
+      const typeParam = typeof req.query.type === "string" ? req.query.type : null;
+
+      if (typeParam === "weekly") {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 8);
+
+        const briefing = await prisma.briefing.findFirst({
+          where: {
+            userId: USER_ID,
+            type: "weekly",
+            createdAt: { gte: weekAgo },
+          },
+          orderBy: { createdAt: "desc" },
+        });
+
+        res.json({
+          brief: briefing?.content ?? null,
+          type: briefing ? "weekly" : null,
+          createdAt: briefing?.createdAt ?? null,
+        });
+        return;
+      }
+
       const type = getBriefType();
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
@@ -196,6 +284,32 @@ export function createAiRouter(): Router {
     } catch (err) {
       console.error("[ai] GET /brief/latest", err);
       res.json({ brief: null });
+    }
+  });
+
+  router.post("/brief/weekly", async (_req, res) => {
+    try {
+      const ctx = await collectContext();
+      const analytics = await fetchAnalytics(undefined, 14).catch(() => null);
+
+      const prompt = buildWeeklyPrompt(ctx, analytics);
+      const brief = await generateBriefJson(prompt);
+
+      await prisma.briefing.create({
+        data: {
+          type: "weekly",
+          content: brief,
+          userId: USER_ID,
+        },
+      });
+
+      res.json({ brief, type: "weekly" });
+    } catch (err: any) {
+      console.error("[ai] POST /brief/weekly", err);
+      res.status(500).json({
+        error: "Weekly AI brief error",
+        detail: err?.message ?? String(err),
+      });
     }
   });
 

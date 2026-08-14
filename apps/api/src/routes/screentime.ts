@@ -16,7 +16,7 @@ const ingestSchema = z.object({
   events: z.array(screenEventSchema).max(5000),
 });
 
-const EMPTY_SCREEN_TIME = { totalToday: null, weekDays: [], apps: [] };
+const EMPTY_SCREEN_TIME = { totalToday: null, weekDays: [], apps: [], forecast: null };
 
 export function screentimeRouter(): Router {
   const router = Router();

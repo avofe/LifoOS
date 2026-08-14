@@ -11,6 +11,9 @@ object Store {
     private const val K_LAST_SYNC_TIME = "last_sync_time"
     private const val K_LAST_ERROR = "last_error"
     private const val K_ACCESS_KEY = "access_key"
+    private const val K_LAST_APP_PKG = "last_app_pkg"
+    private const val K_LAST_APP_LABEL = "last_app_label"
+    private const val K_LAST_APP_START = "last_app_start"
 
     fun prefs(c: Context) = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -23,6 +26,10 @@ object Store {
     fun lastSync(c: Context): Long = prefs(c).getLong(K_LAST_SYNC, 0L)
     fun lastSyncTime(c: Context): Long = prefs(c).getLong(K_LAST_SYNC_TIME, 0L)
     fun lastError(c: Context): String? = prefs(c).getString(K_LAST_ERROR, null)
+
+    fun lastAppPkg(c: Context): String? = prefs(c).getString(K_LAST_APP_PKG, null)
+    fun lastAppLabel(c: Context): String? = prefs(c).getString(K_LAST_APP_LABEL, null)
+    fun lastAppStart(c: Context): Long = prefs(c).getLong(K_LAST_APP_START, 0L)
 
     fun setServer(c: Context, v: String) =
         prefs(c).edit().putString(K_SERVER, v.trimEnd('/')).apply()
@@ -44,4 +51,11 @@ object Store {
 
     fun setLastError(c: Context, v: String?) =
         prefs(c).edit().putString(K_LAST_ERROR, v).apply()
+
+    fun setLastApp(c: Context, pkg: String?, label: String, start: Long) =
+        prefs(c).edit()
+            .putString(K_LAST_APP_PKG, pkg)
+            .putString(K_LAST_APP_LABEL, label)
+            .putLong(K_LAST_APP_START, start)
+            .apply()
 }

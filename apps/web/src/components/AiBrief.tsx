@@ -6,9 +6,10 @@ import type { BriefData, BriefLatestResponse, BriefGenerateResponse } from "@lif
 
 export function AiBrief() {
   const [brief, setBrief] = useState<BriefData | null>(null);
-  const [type, setType] = useState<"morning" | "evening" | null>(null);
+  const [type, setType] = useState<"morning" | "evening" | "weekly" | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [generatingWeekly, setGeneratingWeekly] = useState(false);
   const [error, setError] = useState(false);
 
   const fetchLatest = useCallback(() => {
@@ -50,6 +51,25 @@ export function AiBrief() {
       });
   }, []);
 
+  const generateWeekly = useCallback(() => {
+    setGeneratingWeekly(true);
+    setError(false);
+    apiFetch<BriefGenerateResponse>("/api/ai/brief/weekly", { method: "POST" })
+      .then((data) => {
+        if (data?.brief) {
+          setBrief(data.brief);
+          setType(data.type);
+        } else {
+          setError(true);
+        }
+        setGeneratingWeekly(false);
+      })
+      .catch(() => {
+        setError(true);
+        setGeneratingWeekly(false);
+      });
+  }, []);
+
   return (
     <div className="relative overflow-hidden rounded-xl border border-zinc-700/50 bg-surface p-5 pb-[18px] pl-6">
       <div className="absolute left-0 top-5 bottom-5 w-[2px] rounded-full bg-gradient-to-b from-transparent via-accent to-transparent opacity-40 animate-vline" />
@@ -60,20 +80,30 @@ export function AiBrief() {
             AI · Брифинг
             {type && (
               <span className="ml-2 text-zinc-500">
-                · {type === "morning" ? "утро" : "вечер"}
+                · {type === "morning" ? "утро" : type === "evening" ? "вечер" : "неделя"}
               </span>
             )}
           </span>
           <span className="inline-block h-[11px] w-[5px] rounded-sm bg-accent animate-blink" />
         </div>
-        <button
-          onClick={generate}
-          disabled={generating}
-          className="flex h-6 w-6 items-center justify-center rounded-md text-xs text-zinc-500 transition hover:bg-surface-2 hover:text-accent-light disabled:opacity-40"
-          title="Сгенерировать брифинг"
-        >
-          ⟳
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={generateWeekly}
+            disabled={generatingWeekly}
+            className="rounded-md border border-zinc-800 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-500 transition hover:bg-surface-2 hover:text-accent-light disabled:opacity-40"
+            title="Сгенерировать недельную сводку"
+          >
+            {generatingWeekly ? "..." : "Неделя"}
+          </button>
+          <button
+            onClick={generate}
+            disabled={generating}
+            className="flex h-6 w-6 items-center justify-center rounded-md text-xs text-zinc-500 transition hover:bg-surface-2 hover:text-accent-light disabled:opacity-40"
+            title="Сгенерировать брифинг"
+          >
+            ⟳
+          </button>
+        </div>
       </div>
 
       {(loading || generating) && !brief && (
@@ -147,14 +177,14 @@ export function AiBrief() {
             </Section>
           )}
 
-          <Section label={type === "morning" ? "ЭКРАННОЕ ВРЕМЯ · ВЧЕРА" : "ЭКРАННОЕ ВРЕМЯ · СЕГОДНЯ"}>
+          <Section label={type === "morning" ? "ЭКРАННОЕ ВРЕМЯ · ВЧЕРА" : type === "weekly" ? "ЭКРАННОЕ ВРЕМЯ · НЕДЕЛЯ" : "ЭКРАННОЕ ВРЕМЯ · СЕГОДНЯ"}>
             <BriefItem icon="sc" color="green">
               {brief.screentime}
             </BriefItem>
           </Section>
 
           {(brief.quickActions ?? []).length > 0 && (
-            <Section label={type === "morning" ? "ПЛАН НА ДЕНЬ" : "НА ЗАВТРА"}>
+            <Section label={type === "morning" ? "ПЛАН НА ДЕНЬ" : type === "weekly" ? "НА СЛЕДУЮЩУЮ НЕДЕЛЮ" : "НА ЗАВТРА"}>
               <div className="flex flex-wrap gap-1.5">
                 {brief.quickActions.map((a, i) => (
                   <QuickBtn key={i} highlight={i === 0}>

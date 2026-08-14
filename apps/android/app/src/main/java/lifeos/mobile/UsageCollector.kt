@@ -9,10 +9,19 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
+data class CarryOver(val pkg: String, val label: String, val startMs: Long)
+
+data class CollectResult(val events: List<ScreenEvent>, val carryOver: CarryOver?)
+
 object UsageCollector {
     private const val MIN_DURATION_MS = 1_000L
 
-    fun collect(context: Context, since: Long, until: Long): List<ScreenEvent> {
+    fun collect(
+        context: Context,
+        since: Long,
+        until: Long,
+        carryOver: CarryOver?,
+    ): CollectResult {
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val events = usm.queryEvents(since, until)
 
@@ -21,9 +30,9 @@ object UsageCollector {
             .apply { timeZone = TimeZone.getTimeZone("UTC") }
 
         val result = ArrayList<ScreenEvent>()
-        var currentPkg: String? = null
-        var currentStart: Long = 0L
-        var currentLabel: String = ""
+        var currentPkg: String? = carryOver?.pkg
+        var currentStart: Long = carryOver?.startMs?.coerceAtLeast(since) ?: 0L
+        var currentLabel: String = carryOver?.label.orEmpty()
 
         fun flush(end: Long) {
             val pkg = currentPkg ?: return
@@ -58,8 +67,12 @@ object UsageCollector {
                 UsageEvents.Event.ACTIVITY_PAUSED -> flush(e.timeStamp)
             }
         }
+
+        val lastPkg = currentPkg
+        val lastLabel = currentLabel
         flush(until)
 
-        return result
+        val nextCarryOver = lastPkg?.let { CarryOver(it, lastLabel, until) }
+        return CollectResult(result, nextCarryOver)
     }
 }

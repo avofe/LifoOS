@@ -58,6 +58,8 @@ export default function SettingsPage() {
   const [limitApps, setLimitApps] = useState<LimitAppRow[]>([]);
   const [limitSaving, setLimitSaving] = useState(false);
   const [limitSaved, setLimitSaved] = useState(false);
+  const [newAppName, setNewAppName] = useState("");
+  const [newAppMin, setNewAppMin] = useState(0);
 
   const fetchAll = useCallback(async () => {
     const [s, st, d, l] = await Promise.all([
@@ -178,6 +180,14 @@ export default function SettingsPage() {
     } finally {
       setLimitSaving(false);
     }
+  };
+
+  const handleAddAppLimit = () => {
+    const name = newAppName.trim();
+    if (!name || newAppMin <= 0) return;
+    setAppLimits((prev) => ({ ...prev, [name]: newAppMin }));
+    setNewAppName("");
+    setNewAppMin(0);
   };
 
   function fmtUsed(totalSec: number): string {
@@ -334,40 +344,78 @@ export default function SettingsPage() {
             />
           </div>
 
-          {limitApps.length > 0 && (
-            <div className="flex flex-col gap-2">
-              {limitApps.map((a) => (
-                <div
-                  key={a.name}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2"
-                >
-                  <div className="flex min-w-0 flex-col">
-                    <span className="truncate text-sm text-zinc-200">{a.name}</span>
-                    <span className="text-[11px] text-zinc-600">
-                      сегодня {fmtUsed(a.usedSec)}
-                    </span>
+          {(() => {
+            const usedByName = new Map(limitApps.map((a) => [a.name, a.usedSec]));
+            const rows = Array.from(
+              new Set([...limitApps.map((a) => a.name), ...Object.keys(appLimits)])
+            );
+            if (rows.length === 0) return null;
+            return (
+              <div className="flex flex-col gap-2">
+                {rows.map((name) => (
+                  <div
+                    key={name}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2"
+                  >
+                    <div className="flex min-w-0 flex-col">
+                      <span className="truncate text-sm text-zinc-200">{name}</span>
+                      <span className="text-[11px] text-zinc-600">
+                        сегодня {fmtUsed(usedByName.get(name) ?? 0)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] text-zinc-600">мин/день</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={1440}
+                        value={appLimits[name] ?? ""}
+                        onChange={(e) =>
+                          setAppLimits((prev) => ({
+                            ...prev,
+                            [name]: Number(e.target.value) || 0,
+                          }))
+                        }
+                        placeholder="0"
+                        className="w-20 rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-accent"
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <label className="text-[10px] text-zinc-600">мин/день</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={1440}
-                      value={appLimits[a.name] ?? ""}
-                      onChange={(e) =>
-                        setAppLimits((prev) => ({
-                          ...prev,
-                          [a.name]: Number(e.target.value) || 0,
-                        }))
-                      }
-                      placeholder="0"
-                      className="w-20 rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-accent"
-                    />
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            );
+          })()}
+
+          <div className="flex flex-wrap items-end gap-2">
+            <div>
+              <label className="mb-1 block text-[10px] text-zinc-600">Приложение</label>
+              <input
+                value={newAppName}
+                onChange={(e) => setNewAppName(e.target.value)}
+                placeholder="Telegram"
+                className="w-40 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-accent"
+              />
             </div>
-          )}
+            <div>
+              <label className="mb-1 block text-[10px] text-zinc-600">Лимит, мин/день</label>
+              <input
+                type="number"
+                min={0}
+                max={1440}
+                value={newAppMin || ""}
+                onChange={(e) => setNewAppMin(Number(e.target.value) || 0)}
+                placeholder="60"
+                className="w-20 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-accent"
+              />
+            </div>
+            <button
+              onClick={handleAddAppLimit}
+              disabled={!newAppName.trim() || newAppMin <= 0}
+              className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-50"
+            >
+              Добавить лимит
+            </button>
+          </div>
 
           <div className="flex items-center gap-3">
             <button

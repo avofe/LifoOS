@@ -1,4 +1,5 @@
 import { prisma } from "@lifeos/db";
+import type { ScreenTimeForecast } from "@lifeos/types";
 import { USER_ID } from "../index";
 import { getTimezone, getDayStart, getNextDayStart, fmtTime, getWeekday, getHourOfDay } from "./time";
 
@@ -191,6 +192,7 @@ export async function fetchScreenTimeFromDb(deviceId?: string): Promise<{
   totalToday: string;
   weekDays: { label: string; height: string; over: boolean; today: boolean }[];
   apps: { name: string; width: string; color: string; time: string }[];
+  forecast: ScreenTimeForecast;
 } | null> {
   const tz = await getTimezone();
   const now = new Date();
@@ -260,6 +262,7 @@ export async function fetchScreenTimeFromDb(deviceId?: string): Promise<{
     totalToday: fmtTime(totalToday),
     weekDays,
     apps,
+    forecast: await computeForecast(totalToday),
   };
 }
 
@@ -376,6 +379,7 @@ export async function fetchScreenTimeFromAw(): Promise<{
   totalToday: string;
   weekDays: { label: string; height: string; over: boolean; today: boolean }[];
   apps: { name: string; width: string; color: string; time: string }[];
+  forecast: ScreenTimeForecast;
 } | null> {
   const now = new Date();
   const buckets = await fetchBuckets().catch(() => null);
@@ -457,10 +461,19 @@ export async function fetchScreenTimeFromAw(): Promise<{
     time: fmtTime(a.seconds),
   }));
 
+  const dayMs = 86400000;
+  const elapsed = Math.min(1, Math.max(0, (now.getTime() - startOfToday.getTime()) / dayMs));
+  const projectedSec = elapsed > 0.02 ? Math.round(totalToday / elapsed) : totalToday;
+
   return {
     totalToday: fmtTime(totalToday),
     weekDays,
     apps,
+    forecast: {
+      projected: fmtTime(projectedSec),
+      projectedSec,
+      elapsedFraction: Math.round(elapsed * 100) / 100,
+    },
   };
 }
 
@@ -572,6 +585,21 @@ export async function fetchAnalyticsFromAw(
 // ─────────────────────────────────────────────────────────────
 // Public API: DB first, then live AW, then null (route falls to MOCK)
 // ─────────────────────────────────────────────────────────────
+
+export async function computeForecast(usedSec: number): Promise<ScreenTimeForecast> {
+  const tz = await getTimezone();
+  const now = new Date();
+  const todayStart = getDayStart(0, tz, now);
+  const dayEnd = getNextDayStart(todayStart);
+  const dayMs = dayEnd.getTime() - todayStart.getTime();
+  const elapsed = Math.min(1, Math.max(0, (now.getTime() - todayStart.getTime()) / dayMs));
+  const projectedSec = elapsed > 0.02 ? Math.round(usedSec / elapsed) : usedSec;
+  return {
+    projected: fmtTime(projectedSec),
+    projectedSec,
+    elapsedFraction: Math.round(elapsed * 100) / 100,
+  };
+}
 
 export async function fetchScreenLimits(): Promise<{
   total: { limitMin: number | null; usedSec: number; over: boolean };

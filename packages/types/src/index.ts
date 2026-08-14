@@ -89,6 +89,13 @@ export interface ScreenTimeData {
   totalToday: string | null;
   weekDays: WeekDay[];
   apps: AppStat[];
+  forecast?: ScreenTimeForecast | null;
+}
+
+export interface ScreenTimeForecast {
+  projected: string;
+  projectedSec: number;
+  elapsedFraction: number;
 }
 
 export interface DayApp {
@@ -220,17 +227,34 @@ export interface BriefData {
 
 export interface BriefLatestResponse {
   brief: BriefData | null;
-  type: "morning" | "evening" | null;
+  type: "morning" | "evening" | "weekly" | null;
   createdAt?: string;
 }
 
 export interface BriefGenerateResponse {
   brief: BriefData;
-  type: "morning" | "evening";
+  type: "morning" | "evening" | "weekly";
 }
 
 export interface AiChatResponse {
   response: string;
+}
+
+/* ── Weather ── */
+export interface WeatherForecastDay {
+  day: string;
+  condition: string;
+  tempMax: string;
+  tempMin: string;
+}
+
+export interface WeatherData {
+  condition: string;
+  temp: string;
+  feelsLike: string;
+  wind: string;
+  humidity: string;
+  forecast: WeatherForecastDay[];
 }
 
 /* ── API Error ── */

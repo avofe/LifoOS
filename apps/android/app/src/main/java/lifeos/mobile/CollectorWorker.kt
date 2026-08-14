@@ -23,11 +23,16 @@ class CollectorWorker(context: Context, params: WorkerParameters) : CoroutineWor
                 return Result.success()
             }
 
-            val events = UsageCollector.collect(ctx, since, now)
+            val carryOver = Store.lastAppPkg(ctx)?.let { pkg ->
+                CarryOver(pkg, Store.lastAppLabel(ctx) ?: pkg, Store.lastAppStart(ctx))
+            }
+            val collectResult = UsageCollector.collect(ctx, since, now, carryOver)
+            val events = collectResult.events
             if (events.isEmpty()) {
                 Store.setLastSync(ctx, now)
                 Store.setLastSyncTime(ctx, now)
                 Store.setLastError(ctx, null)
+                saveCarryOver(ctx, collectResult.carryOver)
                 fetchAndShowNotifications(ctx, server, token)
                 Result.success()
             } else {
@@ -50,6 +55,7 @@ class CollectorWorker(context: Context, params: WorkerParameters) : CoroutineWor
                 Store.setLastSync(ctx, now)
                 Store.setLastSyncTime(ctx, now)
                 Store.setLastError(ctx, null)
+                saveCarryOver(ctx, collectResult.carryOver)
                 fetchAndShowNotifications(ctx, server, Store.token(ctx) ?: token)
                 Result.success()
             }
@@ -66,6 +72,14 @@ class CollectorWorker(context: Context, params: WorkerParameters) : CoroutineWor
             Notifier.showNew(ctx, items)
         } catch (_: Throwable) {
             // notification fetch must not break the collector
+        }
+    }
+
+    private fun saveCarryOver(ctx: Context, carryOver: CarryOver?) {
+        if (carryOver != null) {
+            Store.setLastApp(ctx, carryOver.pkg, carryOver.label, carryOver.startMs)
+        } else {
+            Store.setLastApp(ctx, null, "", 0L)
         }
     }
 

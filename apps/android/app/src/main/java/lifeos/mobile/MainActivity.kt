@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.os.Process
 import android.provider.Settings
 import android.widget.Toast
@@ -43,6 +44,8 @@ class MainActivity : AppCompatActivity() {
 
         binding.syncNow.setOnClickListener { runSyncNow() }
 
+        binding.battery.setOnClickListener { requestIgnoreBatteryOptimizations() }
+
         binding.connect.setOnClickListener {
             val server = binding.server.text.toString().trim()
             val key = binding.key.text.toString().trim()
@@ -77,6 +80,9 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refreshStatus()
+        if (!Store.token(this).isNullOrEmpty()) {
+            WorkManager.getInstance(this).enqueue(OneTimeWorkRequestBuilder<CollectorWorker>().build())
+        }
     }
 
     private fun deviceName(): String =
@@ -154,6 +160,25 @@ class MainActivity : AppCompatActivity() {
             ExistingPeriodicWorkPolicy.KEEP,
             periodic,
         )
+    }
+
+    private fun requestIgnoreBatteryOptimizations() {
+        val pm = getSystemService(PowerManager::class.java)
+        if (pm.isIgnoringBatteryOptimizations(packageName)) {
+            toast("Оптимизация батареи уже отключена для приложения")
+            return
+        }
+        try {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                .setData(Uri.parse("package:$packageName"))
+            startActivity(intent)
+        } catch (_: Exception) {
+            try {
+                startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+            } catch (_: Exception) {
+                toast("Найди LifeOS в настройках батареи и разреши работу в фоне")
+            }
+        }
     }
 
     private fun openUsageAccessSettings() {
