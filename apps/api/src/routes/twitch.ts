@@ -12,10 +12,7 @@ export function createTwitchRouter(): Router {
       res.json(result);
     } catch (err: any) {
       console.error("[twitch] GET /streams", err);
-      res.status(500).json({
-        error: "Failed to fetch Twitch data",
-        detail: err?.message ?? String(err),
-      });
+      res.status(500).json({ error: "Failed to fetch Twitch data" });
     }
   });
 

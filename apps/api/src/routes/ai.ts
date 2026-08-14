@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { createRateLimiter } from "../lib/rate-limit";
 import { prisma } from "@lifeos/db";
 import { USER_ID } from "../index";
 import { queryGroq } from "../lib/gemini";
@@ -236,6 +237,7 @@ ${subsStr}
 
 export function createAiRouter(): Router {
   const router: Router = Router();
+  const chatLimiter = createRateLimiter(60_000, 10);
 
   router.get("/brief/latest", async (req, res) => {
     try {
@@ -306,10 +308,7 @@ export function createAiRouter(): Router {
       res.json({ brief, type: "weekly" });
     } catch (err: any) {
       console.error("[ai] POST /brief/weekly", err);
-      res.status(500).json({
-        error: "Weekly AI brief error",
-        detail: err?.message ?? String(err),
-      });
+      res.status(500).json({ error: "Weekly AI brief error" });
     }
   });
 
@@ -345,14 +344,15 @@ export function createAiRouter(): Router {
       res.json({ brief, type });
     } catch (err: any) {
       console.error("[ai] POST /brief", err);
-      res.status(500).json({
-        error: "AI brief error",
-        detail: err?.message ?? String(err),
-      });
+      res.status(500).json({ error: "AI brief error" });
     }
   });
 
   router.post("/chat", validate(chatMessageSchema), async (req, res) => {
+    if (!chatLimiter(req.ip ?? "unknown")) {
+      res.status(429).json({ error: "Слишком много запросов, попробуйте через минуту" });
+      return;
+    }
     try {
       const { message } = req.body;
 
@@ -386,10 +386,7 @@ export function createAiRouter(): Router {
       res.json({ response: response.trim() });
     } catch (err: any) {
       console.error("[ai] POST /chat", err);
-      res.status(500).json({
-        error: "AI chat error",
-        detail: err?.message ?? String(err),
-      });
+      res.status(500).json({ error: "AI chat error" });
     }
   });
 

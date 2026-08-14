@@ -98,6 +98,16 @@ if (fs.existsSync(staticDir)) {
   console.log(`Static dir not found at ${staticDir}, frontend must be served externally`);
 }
 
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (err?.type === "entity.parse.failed") {
+    res.status(400).json({ error: "Invalid JSON body" });
+    return;
+  }
+  console.error("[api] unhandled error:", err);
+  if (res.headersSent) return;
+  res.status(500).json({ error: "Internal server error" });
+});
+
 async function seed() {
   const exists = await prisma.user.findUnique({ where: { id: USER_ID } });
   if (!exists) {

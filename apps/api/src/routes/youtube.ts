@@ -25,9 +25,7 @@ export function createYouTubeRouter(): Router {
       res.json(allVideos);
     } catch (err: any) {
       console.error("[youtube] GET /videos", err);
-      res
-        .status(500)
-        .json({ error: "YouTube API error", detail: err?.message ?? String(err) });
+      res.status(500).json({ error: "YouTube API error" });
     }
   });
 

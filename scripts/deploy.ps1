@@ -85,6 +85,7 @@ cd /opt/lifeos
 git pull origin master
 pnpm install
 pm2 stop lifeos >/dev/null 2>&1 || true
+bash /opt/lifeos/scripts/backup.sh >/dev/null 2>&1 && echo "backup: ok" || echo "backup: skipped"
 pnpm --filter @lifeos/types build
 pnpm --filter @lifeos/db db:push
 pnpm --filter @lifeos/api build

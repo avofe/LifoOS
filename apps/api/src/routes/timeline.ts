@@ -298,10 +298,7 @@ export function timelineRouter(): Router {
       res.json(events.slice(0, MAX_EVENTS));
     } catch (err: any) {
       console.error("[timeline] GET /", err);
-      res.status(500).json({
-        error: "Timeline error",
-        detail: err?.message ?? String(err),
-      });
+      res.status(500).json({ error: "Timeline error" });
     }
   });
 
