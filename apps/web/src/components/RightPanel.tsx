@@ -54,10 +54,12 @@ export function RightPanel() {
                 <Skeleton className="h-[26px] w-2/3" />
               </div>
             ) : timeline.length === 0 ? (
-              <p className="py-4 text-center text-xs text-zinc-600">Нет событий</p>
+              <p className="py-4 text-center text-xs text-zinc-500">
+                Событий пока нет
+              </p>
             ) : (
               timeline.map((ev, i) => (
-                <TimelineRow key={i} time={ev.time} dot={ev.dot}>
+                <TimelineRow key={`${ev.type}-${ev.ts}-${i}`} time={ev.time} dot={ev.dot}>
                   <span>{ev.title}</span>
                   {ev.description && (
                     <div className="text-[10.5px] text-zinc-500">{ev.description}</div>
@@ -107,7 +109,7 @@ function TimelineRow({
 
   return (
     <div className="flex items-start gap-2.5 py-2">
-      <div className="mt-[5px] w-[30px] flex-shrink-0 text-right font-mono text-[10px] text-zinc-500">
+      <div className="mt-[5px] w-[44px] flex-shrink-0 text-right font-mono text-[10px] text-zinc-500">
         {time}
       </div>
       <div className="mt-[7px] flex w-3.5 flex-shrink-0 items-center justify-center">
