@@ -7,7 +7,6 @@ import { fetchStreak } from "../lib/streak";
 import { fetchNewVideos } from "../lib/youtube";
 import { fetchStreams } from "../lib/twitch";
 import { getTimezone, formatDayKey } from "../lib/time";
-import { sleepDurationMin } from "./sleep";
 
 export function createSummaryRouter(): Router {
   const router: Router = Router();
@@ -18,7 +17,7 @@ export function createSummaryRouter(): Router {
       const tz = await getTimezone();
       const todayKey = formatDayKey(tz, now);
 
-      const [yesterday, limits, streak, payments, videos, streams, tasks, sleep] =
+      const [yesterday, limits, streak, payments, videos, streams, tasks] =
         await Promise.allSettled([
           fetchYesterday(),
           fetchScreenLimits(),
@@ -38,11 +37,6 @@ export function createSummaryRouter(): Router {
             orderBy: [{ done: "asc" }, { sort: "asc" }, { createdAt: "asc" }],
             take: 10,
             select: { id: true, text: true, done: true },
-          }),
-          prisma.sleepLog.findFirst({
-            where: { userId: USER_ID, day: { lte: todayKey } },
-            orderBy: { day: "desc" },
-            select: { day: true, bedAt: true, wakeAt: true, note: true },
           }),
         ]);
 
@@ -105,17 +99,6 @@ export function createSummaryRouter(): Router {
           ? tasks.value.map((t) => ({ id: t.id, text: t.text, done: t.done }))
           : [];
 
-      const sleepData: DaySummary["sleep"] =
-        sleep.status === "fulfilled" && sleep.value
-          ? {
-              day: sleep.value.day,
-              bedAt: sleep.value.bedAt,
-              wakeAt: sleep.value.wakeAt,
-              durationMin: sleepDurationMin(sleep.value.bedAt, sleep.value.wakeAt),
-              note: sleep.value.note,
-            }
-          : null;
-
       const summary: DaySummary = {
         yesterday: y
           ? {
@@ -136,7 +119,6 @@ export function createSummaryRouter(): Router {
         videos: videosData,
         streams: streamsData,
         plan: planData,
-        sleep: sleepData,
       };
 
       res.json(summary);

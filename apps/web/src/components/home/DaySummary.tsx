@@ -13,14 +13,6 @@ function fmtTime(totalSec: number): string {
   return `${h}ч ${m}м`;
 }
 
-function fmtDuration(min: number): string {
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  if (h === 0) return `${m}м`;
-  if (m === 0) return `${h}ч`;
-  return `${h}ч ${m}м`;
-}
-
 function fmtAgo(publishedAt: string): string {
   const diff = Date.now() - new Date(publishedAt).getTime();
   const hours = Math.floor(diff / 3600000);
@@ -58,7 +50,6 @@ export function DaySummary() {
       data.forecast ||
       data.streak ||
       data.plan.length > 0 ||
-      data.sleep ||
       data.payments.length > 0 ||
       data.videos.length > 0 ||
       data.streams.length > 0);
@@ -124,21 +115,6 @@ export function DaySummary() {
                 >
                   Открыть день →
                 </a>
-              </Row>
-            </Section>
-          )}
-
-          {/* sleep */}
-          {data.sleep && (
-            <Section label="СОН">
-              <Row icon="◐" color="green">
-                <b>{fmtDuration(data.sleep.durationMin)}</b>{" "}
-                <span className="text-zinc-400">
-                  · {data.sleep.bedAt}–{data.sleep.wakeAt}
-                </span>
-                {data.sleep.note && (
-                  <span className="text-zinc-500"> · {data.sleep.note}</span>
-                )}
               </Row>
             </Section>
           )}

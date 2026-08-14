@@ -27,7 +27,6 @@ model User {
   habits        Habit[]
   habitLogs     HabitLog[]
   dayTasks      DayTask[]
-  sleepLogs     SleepLog[]
 }
 
 model Device {
@@ -202,21 +201,6 @@ model DayTask {
 
   user User @relation(fields: [userId], references: [id])
 
-  @@index([userId, day])
-}
-
-model SleepLog {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  day       String // YYYY-MM-DD (night = wake date, local)
-  bedAt     String // "HH:MM"
-  wakeAt    String // "HH:MM"
-  note      String?
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@unique([userId, day])
   @@index([userId, day])
 }
 

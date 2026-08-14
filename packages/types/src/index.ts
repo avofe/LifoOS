@@ -306,14 +306,6 @@ export interface SummaryStream {
   uptime: string | null;
 }
 
-export interface SummarySleep {
-  day: string;
-  bedAt: string;
-  wakeAt: string;
-  durationMin: number;
-  note: string | null;
-}
-
 export interface DaySummary {
   yesterday: SummaryYesterday | null;
   todayTotalSec: number;
@@ -325,7 +317,6 @@ export interface DaySummary {
   videos: { id: string; title: string; channel: string; publishedAt: string }[];
   streams: SummaryStream[];
   plan: { id: string; text: string; done: boolean }[];
-  sleep: SummarySleep | null;
 }
 
 /* ── Focus ── */

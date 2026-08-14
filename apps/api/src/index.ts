@@ -21,7 +21,6 @@ import { createFocusRouter } from "./routes/focus";
 import { createSummaryRouter } from "./routes/summary";
 import { createHabitsRouter } from "./routes/habits";
 import { createTasksRouter } from "./routes/tasks";
-import { createSleepRouter } from "./routes/sleep";
 import { weatherRouter } from "./routes/weather";
 import { requireAccessKey } from "./lib/auth";
 import { initGroq, reinitGroq } from "./lib/gemini";
@@ -84,7 +83,6 @@ app.use("/api/focus", createFocusRouter());
 app.use("/api/summary", createSummaryRouter());
 app.use("/api/habits", createHabitsRouter());
 app.use("/api/tasks", createTasksRouter());
-app.use("/api/sleep", createSleepRouter());
 app.use("/api/weather", weatherRouter());
 
 // Serve frontend static files (production)
