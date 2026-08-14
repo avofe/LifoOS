@@ -766,7 +766,10 @@ function HourHeatmap({
       <div className="min-w-[600px]">
         <div className="flex">
           <div className="w-8 flex-shrink-0" />
-          <div className="grid flex-1 grid-cols-12 gap-[3px]">
+          <div
+            className="grid flex-1 gap-[3px]"
+            style={{ gridTemplateColumns: "repeat(24, minmax(0, 1fr))" }}
+          >
             {hourLabels.map((h) => (
               <span
                 key={h}
@@ -815,7 +818,10 @@ function HourHeatmap({
         </div>
         <div className="mt-1 flex">
           <div className="w-8 flex-shrink-0" />
-          <div className="grid flex-1 grid-cols-12 gap-[3px]">
+          <div
+            className="grid flex-1 gap-[3px]"
+            style={{ gridTemplateColumns: "repeat(24, minmax(0, 1fr))" }}
+          >
             {hourLabels.map((h) => (
               <span
                 key={h}
