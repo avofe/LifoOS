@@ -183,6 +183,19 @@ async function fetchScreenEvents(): Promise<TimelineEvent[]> {
       }
     }
 
+    for (const dv of limits.devices) {
+      if (dv.over && dv.limitMin !== null) {
+        events.push({
+          time: formatTime(now),
+          type: "system" as const,
+          title: `${dv.name}: превышен лимит`,
+          description: `${fmtTime(dv.usedSec)} при лимите ${dv.limitMin} мин`,
+          dot: "orange" as const,
+          ts: now.getTime(),
+        });
+      }
+    }
+
     if (streak.enabled && streak.streak > 0) {
       events.push({
         time: formatTime(now),

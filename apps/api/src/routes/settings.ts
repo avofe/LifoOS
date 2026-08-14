@@ -17,6 +17,9 @@ const updateSettingsSchema = z.object({
   screenLimitApps: z
     .record(z.string(), z.number().int().min(0).max(1440))
     .optional(),
+  screenLimitDevices: z
+    .record(z.string(), z.number().int().min(0).max(1440))
+    .optional(),
   appAliases: z.record(z.string(), z.string().min(1).max(200)).optional(),
   appColors: z.record(z.string(), z.string().regex(/^#[0-9a-fA-F]{6}$/)).optional(),
 });
@@ -44,7 +47,7 @@ export function createSettingsRouter(): Router {
 
   router.put("/", validate(updateSettingsSchema), async (req, res) => {
     try {
-      const { groqApiKey, youtubeApiKey, timezone, weatherLocation, screenLimitTotal, screenLimitApps, appAliases, appColors } = req.body;
+      const { groqApiKey, youtubeApiKey, timezone, weatherLocation, screenLimitTotal, screenLimitApps, screenLimitDevices, appAliases, appColors } = req.body;
 
       const upserts: Promise<any>[] = [];
 
@@ -108,6 +111,16 @@ export function createSettingsRouter(): Router {
             where: { userId_key: { userId: USER_ID, key: "screenLimitApps" } },
             create: { userId: USER_ID, key: "screenLimitApps", value: screenLimitApps },
             update: { value: screenLimitApps },
+          })
+        );
+      }
+
+      if (screenLimitDevices !== undefined) {
+        upserts.push(
+          prisma.setting.upsert({
+            where: { userId_key: { userId: USER_ID, key: "screenLimitDevices" } },
+            create: { userId: USER_ID, key: "screenLimitDevices", value: screenLimitDevices },
+            update: { value: screenLimitDevices },
           })
         );
       }

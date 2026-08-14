@@ -73,6 +73,25 @@ export function createNotificationsRouter(): Router {
             });
           }
         }
+
+        for (const dv of limits.devices) {
+          if (dv.limitMin === null) continue;
+          if (dv.over) {
+            result.push({
+              id: `limit-device-${dv.id}-${dayKey}`,
+              channel: "limits",
+              title: `${dv.name}: превышен лимит`,
+              body: `${fmtTime(dv.usedSec)} использовано при лимите ${dv.limitMin} мин`,
+            });
+          } else if (dv.usedSec >= dv.limitMin * 60 - 15 * 60) {
+            result.push({
+              id: `limit-device-soon-${dv.id}-${dayKey}`,
+              channel: "limits",
+              title: `${dv.name}: почти лимит`,
+              body: `${fmtTime(dv.usedSec)} из ${dv.limitMin} мин`,
+            });
+          }
+        }
       }
 
       const yesterdayStart = getDayStart(-1, tz, now);

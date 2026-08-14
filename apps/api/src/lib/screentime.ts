@@ -680,6 +680,7 @@ export async function computeForecast(usedSec: number): Promise<ScreenTimeForeca
 export async function fetchScreenLimits(): Promise<{
   total: { limitMin: number | null; usedSec: number; over: boolean };
   apps: { name: string; limitMin: number | null; usedSec: number; over: boolean }[];
+  devices: { id: string; name: string; type: string; limitMin: number | null; usedSec: number; over: boolean }[];
 }> {
   const tz = await getTimezone();
   await getAppMeta();
@@ -700,10 +701,16 @@ export async function fetchScreenLimits(): Promise<{
     map.screenLimitApps && typeof map.screenLimitApps === "object"
       ? (map.screenLimitApps as Record<string, number>)
       : {};
+  const deviceLimits: Record<string, number> =
+    map.screenLimitDevices && typeof map.screenLimitDevices === "object"
+      ? (map.screenLimitDevices as Record<string, number>)
+      : {};
 
   const categories: CategoryMap = {};
+  const byDevice = new Map<string, number>();
   for (const e of events) {
     if (e.duration < 1) continue;
+    byDevice.set(e.deviceId, (byDevice.get(e.deviceId) ?? 0) + e.duration);
     const cat = categorize(e.app, e.title ?? "");
     if (cat.skip) continue;
     if (!categories[cat.name]) {
@@ -727,6 +734,22 @@ export async function fetchScreenLimits(): Promise<{
       };
     });
 
+  const deviceMeta = await fetchDeviceMeta();
+  const devices = Array.from(deviceMeta.values())
+    .map((d) => {
+      const usedSec = byDevice.get(d.id) ?? 0;
+      const limitMin = typeof deviceLimits[d.id] === "number" ? deviceLimits[d.id] : null;
+      return {
+        id: d.id,
+        name: d.name,
+        type: d.type,
+        limitMin,
+        usedSec,
+        over: limitMin !== null && usedSec > limitMin * 60,
+      };
+    })
+    .sort((a, b) => b.usedSec - a.usedSec);
+
   return {
     total: {
       limitMin: totalLimitMin,
@@ -734,6 +757,7 @@ export async function fetchScreenLimits(): Promise<{
       over: totalLimitMin !== null && totalUsedSec > totalLimitMin * 60,
     },
     apps,
+    devices,
   };
 }
 

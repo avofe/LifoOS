@@ -10,12 +10,20 @@ interface Settings {
   weatherLocation?: string;
   screenLimitTotal?: number | null;
   screenLimitApps?: Record<string, number>;
+  screenLimitDevices?: Record<string, number>;
   appAliases?: Record<string, string>;
   appColors?: Record<string, string>;
 }
 
 interface LimitAppRow {
   name: string;
+  usedSec: number;
+}
+
+interface LimitDeviceRow {
+  id: string;
+  name: string;
+  type: DeviceType;
   usedSec: number;
 }
 
@@ -58,6 +66,8 @@ export default function SettingsPage() {
   const [limitTotal, setLimitTotal] = useState(0);
   const [appLimits, setAppLimits] = useState<Record<string, number>>({});
   const [limitApps, setLimitApps] = useState<LimitAppRow[]>([]);
+  const [deviceLimits, setDeviceLimits] = useState<Record<string, number>>({});
+  const [limitDevices, setLimitDevices] = useState<LimitDeviceRow[]>([]);
   const [limitSaving, setLimitSaving] = useState(false);
   const [limitSaved, setLimitSaved] = useState(false);
   const [newAppName, setNewAppName] = useState("");
@@ -73,7 +83,7 @@ export default function SettingsPage() {
       apiGet<Settings>("/api/settings"),
       apiGet<Streamer[]>("/api/twitch/streamers"),
       apiGet<Device[]>("/api/devices"),
-      apiGet<{ total: { usedSec: number }; apps: { name: string; usedSec: number }[] }>("/api/screentime/limits"),
+      apiGet<{ total: { usedSec: number }; apps: { name: string; usedSec: number }[]; devices: LimitDeviceRow[] }>("/api/screentime/limits"),
       apiGet<RawAppsData>("/api/screentime/raw-apps"),
     ]);
     if (s) {
@@ -83,6 +93,7 @@ export default function SettingsPage() {
       setWeatherLocation(s.weatherLocation ?? "");
       setLimitTotal(s.screenLimitTotal ?? 0);
       setAppLimits(s.screenLimitApps ?? {});
+      setDeviceLimits(s.screenLimitDevices ?? {});
       setAppAliases(s.appAliases ?? {});
       setAppColors(s.appColors ?? {});
     }
@@ -90,6 +101,7 @@ export default function SettingsPage() {
     setDevices(d ?? []);
     if (l) {
       setLimitApps(l.apps);
+      setLimitDevices(l.devices ?? []);
     }
     setRawApps(ra?.apps ?? []);
     setAccessKeyState(getAccessKey());
@@ -178,12 +190,17 @@ export default function SettingsPage() {
       for (const [name, min] of Object.entries(appLimits)) {
         if (min > 0) apps[name] = min;
       }
+      const devices: Record<string, number> = {};
+      for (const [id, min] of Object.entries(deviceLimits)) {
+        if (min > 0) devices[id] = min;
+      }
       await apiFetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           screenLimitTotal: limitTotal > 0 ? limitTotal : null,
           screenLimitApps: apps,
+          screenLimitDevices: devices,
         }),
       });
       setLimitSaved(true);
@@ -369,7 +386,7 @@ export default function SettingsPage() {
       <section className="rounded-xl border border-zinc-800 bg-surface p-5">
         <h2 className="mb-1 text-sm font-semibold text-zinc-300">Лимиты экрана</h2>
         <p className="mb-4 text-xs text-zinc-600">
-          Дневной лимит на весь экран и отдельные приложения. Сегодня:
+          Дневной лимит: общий, по приложениям и по устройствам. Сегодня:
           {limitApps.length > 0 ? ` ${limitApps.map((a) => `${a.name} — ${fmtUsed(a.usedSec)}`).join(", ")}` : " нет данных"}
         </p>
 
@@ -387,6 +404,52 @@ export default function SettingsPage() {
               placeholder="480"
               className="w-full max-w-[160px] rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-accent"
             />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs text-zinc-500">
+              Лимит по устройствам (мин/день)
+            </label>
+            <p className="mb-2 text-[11px] text-zinc-600">
+              Каждому устройству свой лимит: телефон, компьютер, ноутбук и т.д.
+            </p>
+            {limitDevices.length === 0 ? (
+              <p className="text-xs text-zinc-600">Устройств пока нет</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {limitDevices.map((d) => (
+                  <div
+                    key={d.id}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2"
+                  >
+                    <div className="flex min-w-0 flex-col">
+                      <span className="truncate text-sm text-zinc-200">{d.name}</span>
+                      <span className="text-[11px] text-zinc-600">
+                        {DEVICE_TYPES.find((t) => t.value === d.type)?.label ?? d.type}
+                        {d.usedSec > 0 ? ` · сегодня ${fmtUsed(d.usedSec)}` : ""}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] text-zinc-600">мин/день</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={1440}
+                        value={deviceLimits[d.id] ?? ""}
+                        onChange={(e) =>
+                          setDeviceLimits((prev) => ({
+                            ...prev,
+                            [d.id]: Number(e.target.value) || 0,
+                          }))
+                        }
+                        placeholder="0"
+                        className="w-20 rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-accent"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {(() => {
