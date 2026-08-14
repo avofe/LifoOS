@@ -116,6 +116,50 @@ export function createNotificationsRouter(): Router {
       }
 
       const hour = getHourOfDay(tz, now);
+
+      if (!inFocus) {
+        if (hour >= 9 && hour <= 13) {
+          const plan = await prisma.dayTask.findMany({
+            where: { userId: USER_ID, day: dayKey, done: false },
+            orderBy: [{ sort: "asc" }, { createdAt: "asc" }],
+            take: 5,
+            select: { text: true },
+          });
+          if (plan.length > 0) {
+            result.push({
+              id: `tasks-${dayKey}`,
+              channel: "summary",
+              title: "План на день",
+              body: plan.map((t) => t.text).join(" · "),
+            });
+          }
+        }
+
+        if (hour >= 20) {
+          const [habits, doneLogs] = await Promise.all([
+            prisma.habit.findMany({
+              where: { userId: USER_ID, archived: false },
+              orderBy: { createdAt: "asc" },
+              select: { id: true, name: true, emoji: true },
+            }),
+            prisma.habitLog.findMany({
+              where: { userId: USER_ID, day: dayKey },
+              select: { habitId: true },
+            }),
+          ]);
+          const done = new Set(doneLogs.map((l) => l.habitId));
+          const pending = habits.filter((h) => !done.has(h.id));
+          if (pending.length > 0) {
+            result.push({
+              id: `habits-${dayKey}`,
+              channel: "summary",
+              title: "Привычки: отметь день",
+              body: pending.map((h) => `${h.emoji} ${h.name}`).join(" · "),
+            });
+          }
+        }
+      }
+
       const todaySec = limits.total.usedSec;
       if (!inFocus && hour >= 18 && !limits.total.over && todaySec + yesterdaySec > 0) {
         const remaining =

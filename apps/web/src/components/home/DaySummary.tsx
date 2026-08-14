@@ -13,6 +13,14 @@ function fmtTime(totalSec: number): string {
   return `${h}ч ${m}м`;
 }
 
+function fmtDuration(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h === 0) return `${m}м`;
+  if (m === 0) return `${h}ч`;
+  return `${h}ч ${m}м`;
+}
+
 function fmtAgo(publishedAt: string): string {
   const diff = Date.now() - new Date(publishedAt).getTime();
   const hours = Math.floor(diff / 3600000);
@@ -49,6 +57,8 @@ export function DaySummary() {
     (data.yesterday ||
       data.forecast ||
       data.streak ||
+      data.plan.length > 0 ||
+      data.sleep ||
       data.payments.length > 0 ||
       data.videos.length > 0 ||
       data.streams.length > 0);
@@ -93,6 +103,46 @@ export function DaySummary() {
 
       {data && hasContent && (
         <div className="mb-3.5">
+          {/* plan for the day */}
+          {data.plan.length > 0 && (
+            <Section label="ПЛАН НА ДЕНЬ">
+              {data.plan.map((t) => (
+                <Row
+                  key={t.id}
+                  icon={t.done ? "✓" : "☐"}
+                  color={t.done ? "green" : "yellow"}
+                >
+                  <span className={t.done ? "text-zinc-500 line-through" : ""}>
+                    {t.text}
+                  </span>
+                </Row>
+              ))}
+              <Row icon="→" color="green">
+                <a
+                  href="/day"
+                  className="text-zinc-400 underline-offset-2 transition hover:text-accent-light hover:underline"
+                >
+                  Открыть день →
+                </a>
+              </Row>
+            </Section>
+          )}
+
+          {/* sleep */}
+          {data.sleep && (
+            <Section label="СОН">
+              <Row icon="◐" color="green">
+                <b>{fmtDuration(data.sleep.durationMin)}</b>{" "}
+                <span className="text-zinc-400">
+                  · {data.sleep.bedAt}–{data.sleep.wakeAt}
+                </span>
+                {data.sleep.note && (
+                  <span className="text-zinc-500"> · {data.sleep.note}</span>
+                )}
+              </Row>
+            </Section>
+          )}
+
           {/* screen time */}
           <Section label="ЭКРАННОЕ ВРЕМЯ">
             {data.yesterday && (

@@ -85,6 +85,20 @@ Test-Status -Name "GET /api/youtube/videos" -Method GET -Url "/api/youtube/video
 
 Test-Status -Name "GET /api/timeline" -Method GET -Url "/api/timeline" -ExpectedStatus 200
 
+Test-Status -Name "GET /api/habits" -Method GET -Url "/api/habits" -ExpectedStatus 200
+
+Test-Status -Name "POST /api/habits (empty → 400)" -Method POST -Url "/api/habits" -Body '{}' -ExpectedStatus 400
+
+Test-Status -Name "GET /api/tasks (missing date → 400)" -Method GET -Url "/api/tasks" -ExpectedStatus 400
+
+Test-Status -Name "GET /api/tasks?date=2024-01-01" -Method GET -Url "/api/tasks?date=2024-01-01" -ExpectedStatus 200
+
+Test-Status -Name "POST /api/tasks (empty → 400)" -Method POST -Url "/api/tasks" -Body '{}' -ExpectedStatus 400
+
+Test-Status -Name "GET /api/sleep?days=14" -Method GET -Url "/api/sleep?days=14" -ExpectedStatus 200
+
+Test-Status -Name "POST /api/sleep (empty → 400)" -Method POST -Url "/api/sleep" -Body '{}' -ExpectedStatus 400
+
 Write-Host "`n=== Results ===" -ForegroundColor Cyan
 Write-Host "Passed: $pass" -ForegroundColor Green
 Write-Host "Failed: $fail" -ForegroundColor Red

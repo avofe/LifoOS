@@ -71,6 +71,24 @@ export function getNextDayStart(dayStart: Date): Date {
   return next;
 }
 
+export function formatDayKey(tz: string, at: Date): string {
+  const p = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(at);
+  const get = (t: string) => p.find((x) => x.type === t)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+export function addDaysKey(day: string, offset: number): string {
+  const [y, m, d] = day.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() + offset);
+  return date.toISOString().slice(0, 10);
+}
+
 export function getWeekday(tz: string, at: Date): number {
   const wd = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short" }).format(at);
   const map: Record<string, number> = {

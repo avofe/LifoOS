@@ -4,6 +4,7 @@ import { SidebarLink } from "./SidebarLink";
 const items = [
   { href: "/", icon: "⊞", title: "Главная" },
   { sep: true },
+  { href: "/day", icon: "☐", title: "День" },
   { href: "/analytics", icon: "◷", title: "Экранное время" },
   { href: "/subscriptions", icon: "◈", title: "Подписки" },
   { href: "/youtube", icon: "▷", title: "YouTube" },

@@ -5,10 +5,11 @@ import { usePathname } from "next/navigation";
 
 const items = [
   { href: "/", icon: "⊞", label: "Главная" },
+  { href: "/day", icon: "☐", label: "День" },
   { href: "/analytics", icon: "◷", label: "Время" },
-  { href: "/subscriptions", icon: "◈", label: "Подписки" },
-  { href: "/youtube", icon: "▷", label: "YouTube" },
-  { href: "/twitch", icon: "◉", label: "Twitch" },
+  { href: "/subscriptions", icon: "◈", label: "Платежи" },
+  { href: "/youtube", icon: "▷", label: "Ютуб" },
+  { href: "/twitch", icon: "◉", label: "Твич" },
   { href: "/settings", icon: "⚙", label: "Настройки" },
 ];
 
