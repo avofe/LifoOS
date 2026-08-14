@@ -23,6 +23,7 @@ model User {
   videoStates   UserVideoState[]
   devices       Device[]
   screenEvents  ScreenEvent[]
+  focusSessions FocusSession[]
 }
 
 model Device {
@@ -38,6 +39,7 @@ model Device {
   user User @relation(fields: [userId], references: [id])
 
   screenEvents ScreenEvent[]
+  focusSessions FocusSession[]
 
   @@index([userId])
 }
@@ -154,4 +156,20 @@ model Briefing {
   user User @relation(fields: [userId], references: [id])
 
   @@index([userId, type, createdAt])
+}
+
+model FocusSession {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  deviceId  String   @db.Uuid
+  startedAt DateTime @default(now())
+  endsAt    DateTime
+  endedAt   DateTime?
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startedAt])
+  @@index([deviceId, endedAt])
 }

@@ -2,18 +2,20 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { apiGet } from "@/lib/api";
-import type { AnalyticsData, ScreenLimitsData, ScreenTimeData } from "@lifeos/types";
+import type { AnalyticsData, ScreenLimitsData, ScreenTimeData, StreakStatus } from "@lifeos/types";
 import { SectionCard, CardSkeleton, fmtDuration } from "./SectionCard";
 
 export function ScreenTimeSection() {
   const [st, setSt] = useState<ScreenTimeData | null>(null);
   const [limits, setLimits] = useState<ScreenLimitsData | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [streak, setStreak] = useState<StreakStatus | null>(null);
 
   const fetchData = useCallback(() => {
     apiGet<ScreenTimeData>("/api/screentime").then((d) => setSt(d));
     apiGet<ScreenLimitsData>("/api/screentime/limits").then((d) => setLimits(d));
     apiGet<AnalyticsData>("/api/screentime/analytics?days=14").then((d) => setAnalytics(d));
+    apiGet<StreakStatus>("/api/screentime/streak").then((d) => setStreak(d));
   }, []);
 
   useEffect(() => {
@@ -75,18 +77,62 @@ export function ScreenTimeSection() {
           </div>
 
           {st.weekDays.length > 0 && (
-            <div className="flex h-8 items-end gap-[3px]">
-              {st.weekDays.map((d) => (
-                <div key={d.label} className="flex flex-1 flex-col items-center gap-[3px]">
+            <>
+              <div className="flex h-8 items-end gap-[3px]">
+                {st.weekDays.map((d) => (
                   <div
-                    className={`w-full rounded-t min-h-[3px] ${
-                      d.today ? "bg-accent" : d.over ? "bg-red-400/70" : "bg-zinc-700/50"
-                    }`}
-                    style={{ height: d.height }}
-                  />
-                  <span className="font-mono text-[9px] text-zinc-600">{d.label}</span>
+                    key={d.label}
+                    title={d.incomplete ? "данные неполные (вечер не записан)" : d.label}
+                    className="flex flex-1 flex-col items-center gap-[3px]"
+                  >
+                    <div
+                      className={`w-full rounded-t min-h-[3px] ${
+                        d.today
+                          ? "bg-accent"
+                          : d.over
+                            ? "bg-red-400/70"
+                            : d.incomplete
+                              ? "bg-zinc-700/25"
+                              : "bg-zinc-700/50"
+                      }`}
+                      style={{ height: d.height }}
+                    />
+                    <span
+                      className={`font-mono text-[9px] ${d.incomplete ? "text-zinc-700" : "text-zinc-600"}`}
+                    >
+                      {d.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {st.weekDays.some((d) => d.incomplete) && (
+                <div className="text-[10px] text-amber-400/80">
+                  ⚠ часть дней с неполными данными
                 </div>
-              ))}
+              )}
+            </>
+          )}
+
+          {streak?.enabled && (
+            <div
+              className={`flex flex-wrap items-center gap-x-1.5 text-[11px] ${
+                streak.streak > 0 ? "text-emerald-400/90" : "text-zinc-400"
+              }`}
+            >
+              <span>🔥</span>
+              <span className="font-mono font-semibold">{streak.streak}</span>
+              <span className="text-zinc-500">дней подряд</span>
+              {streak.record > 0 && (
+                <>
+                  <span className="text-zinc-700">·</span>
+                  <span className="text-zinc-500">
+                    рекорд <b className="font-mono text-zinc-400">{streak.record}</b>
+                  </span>
+                </>
+              )}
+              {streak.streak === 0 && (
+                <span className="text-red-400/80">— сегодня выше лимита</span>
+              )}
             </div>
           )}
 

@@ -4,7 +4,7 @@ import { USER_ID } from "../index";
 
 const ACCESS_KEY = process.env.LIFEOS_ACCESS_KEY;
 
-const PUBLIC_PATHS = ["/screentime/events", "/notifications/pending"];
+const PUBLIC_PATHS = ["/screentime/events", "/notifications/pending", "/focus/start", "/focus/stop"];
 
 export function requireAccessKey(req: Request, res: Response, next: NextFunction) {
   if (!ACCESS_KEY) {

@@ -277,11 +277,18 @@ export async function fetchScreenTimeFromDb(deviceId?: string): Promise<{
   const weekDays = dayTotals.map((total, i) => {
     const d = dayStarts[i];
     const isToday = d.toISOString().slice(0, 10) === todayStart.toISOString().slice(0, 10);
+    const dayEvents = events.filter(
+      (e) => e.timestamp.getTime() >= d.getTime() && e.timestamp.getTime() < getNextDayStart(d).getTime()
+    );
+    const lastHour = dayEvents.length
+      ? Math.max(...dayEvents.map((e) => getHourOfDay(tz, e.timestamp)))
+      : -1;
     return {
       label: dayLabels[getWeekday(tz, d) === 0 ? 6 : getWeekday(tz, d) - 1],
       height: `${Math.max(Math.round((total / maxDay) * 100), 8)}%`,
       over: total > DAY_LIMIT,
       today: isToday,
+      incomplete: !isToday && lastHour >= 0 && lastHour < 23,
     };
   });
 
@@ -350,14 +357,20 @@ export async function fetchAnalyticsFromDb(
     total: number;
     apps: { name: string; color: string; seconds: number }[];
     devices: { id: string; name: string; type: string; color: string; seconds: number }[];
+    incomplete: boolean;
+    partial: boolean;
   }[] = [];
 
   for (let i = -(daysBack - 1); i <= 0; i++) {
     const ds = getDayStart(i, tz, now);
     const de = getNextDayStart(ds);
+    const isToday = ds.toISOString().slice(0, 10) === todayStart.toISOString().slice(0, 10);
     const dayEvents = events.filter(
       (e) => e.timestamp.getTime() >= ds.getTime() && e.timestamp.getTime() < de.getTime()
     );
+    const lastHour = dayEvents.length
+      ? Math.max(...dayEvents.map((e) => getHourOfDay(tz, e.timestamp)))
+      : -1;
     const { total, apps } = aggregateDay(dayEvents);
 
     const devTotals = new Map<string, { id: string; name: string; type: string; color: string; seconds: number }>();
@@ -379,6 +392,8 @@ export async function fetchAnalyticsFromDb(
       total,
       apps,
       devices: Array.from(devTotals.values()).sort((a, b) => b.seconds - a.seconds),
+      incomplete: !isToday && lastHour >= 0 && lastHour < 23,
+      partial: isToday,
     });
   }
 
@@ -484,6 +499,7 @@ export async function fetchScreenTimeFromAw(): Promise<{
       height: `${Math.max(Math.round((total / maxDay) * 100), 8)}%`,
       over: total > DAY_LIMIT,
       today: isToday,
+      incomplete: false,
     };
   });
 
@@ -536,7 +552,7 @@ export async function fetchScreenTimeFromAw(): Promise<{
 export async function fetchAnalyticsFromAw(
   daysBack = 14
 ): Promise<{
-  daily: { date: string; label: string; total: number; apps: { name: string; color: string; seconds: number }[]; devices: { id: string; name: string; type: string; color: string; seconds: number }[] }[];
+  daily: { date: string; label: string; total: number; apps: { name: string; color: string; seconds: number }[]; devices: { id: string; name: string; type: string; color: string; seconds: number }[]; incomplete: boolean; partial: boolean }[];
   topApps: { name: string; color: string; total: number }[];
   weekComparison: { current: number; previous: number; diffPercent: number | null };
   todayTotal: number;
@@ -569,7 +585,7 @@ export async function fetchAnalyticsFromAw(
 
   const dayLabels = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
 
-  const daily: { date: string; label: string; total: number; apps: { name: string; color: string; seconds: number }[]; devices: { id: string; name: string; type: string; color: string; seconds: number }[] }[] = dayStarts.map((dayStart) => {
+  const daily: { date: string; label: string; total: number; apps: { name: string; color: string; seconds: number }[]; devices: { id: string; name: string; type: string; color: string; seconds: number }[]; incomplete: boolean; partial: boolean }[] = dayStarts.map((dayStart) => {
     const dayEnd = new Date(dayStart);
     dayEnd.setDate(dayEnd.getDate() + 1);
 
@@ -603,6 +619,8 @@ export async function fetchAnalyticsFromAw(
       total,
       apps,
       devices: [],
+      incomplete: false,
+      partial: dayStart.toDateString() === now.toDateString(),
     };
   });
 

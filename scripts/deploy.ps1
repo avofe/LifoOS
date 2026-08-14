@@ -85,6 +85,7 @@ cd /opt/lifeos
 git pull origin master
 pnpm install
 pnpm --filter @lifeos/types build
+pnpm --filter @lifeos/db db:push
 pnpm --filter @lifeos/api build
 pm2 restart lifeos >/dev/null
 echo "SERVER_OK"

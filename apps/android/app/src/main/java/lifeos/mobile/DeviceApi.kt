@@ -97,4 +97,38 @@ object DeviceApi {
             }
         }
     }
+
+    data class FocusResult(val id: String, val endsAt: String, val remainingSec: Int)
+
+    fun startFocus(server: String, token: String, minutes: Int): FocusResult {
+        val body = JSONObject().put("minutes", minutes).toString().toRequestBody(json)
+        val req = Request.Builder()
+            .url("$server/api/focus/start")
+            .post(body)
+            .header("x-device-token", token)
+            .build()
+
+        client.newCall(req).execute().use { resp ->
+            val text = resp.body?.string().orEmpty()
+            if (!resp.isSuccessful) throw ApiException(resp.code, "HTTP ${resp.code}: ${text.take(200)}")
+            val j = JSONObject(text)
+            return FocusResult(
+                id = j.getString("id"),
+                endsAt = j.getString("endsAt"),
+                remainingSec = j.optInt("remainingSec", 0),
+            )
+        }
+    }
+
+    fun stopFocus(server: String, token: String) {
+        val req = Request.Builder()
+            .url("$server/api/focus/stop")
+            .post(ByteArray(0).toRequestBody(json))
+            .header("x-device-token", token)
+            .build()
+
+        client.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) throw ApiException(resp.code, "HTTP ${resp.code}")
+        }
+    }
 }

@@ -10,6 +10,8 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.os.Process
 import android.provider.Settings
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -22,6 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import lifeos.mobile.databinding.ActivityMainBinding
 import java.text.SimpleDateFormat
+import java.time.Instant
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -38,6 +41,8 @@ class MainActivity : AppCompatActivity() {
         binding.server.setText(Store.server(this))
         Notifier.initChannels(this)
         refreshStatus()
+        refreshFocusUi()
+        startFocusTicker()
         requestNotificationPermission()
 
         binding.grant.setOnClickListener { openUsageAccessSettings() }
@@ -45,6 +50,12 @@ class MainActivity : AppCompatActivity() {
         binding.syncNow.setOnClickListener { runSyncNow() }
 
         binding.battery.setOnClickListener { requestIgnoreBatteryOptimizations() }
+
+        binding.focus15.setOnClickListener { startFocus(15) }
+        binding.focus30.setOnClickListener { startFocus(30) }
+        binding.focus45.setOnClickListener { startFocus(45) }
+        binding.focus60.setOnClickListener { startFocus(60) }
+        binding.focusStop.setOnClickListener { stopFocus() }
 
         binding.connect.setOnClickListener {
             val server = binding.server.text.toString().trim()
@@ -80,9 +91,97 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refreshStatus()
+        refreshFocusUi()
         if (!Store.token(this).isNullOrEmpty()) {
             WorkManager.getInstance(this).enqueue(OneTimeWorkRequestBuilder<CollectorWorker>().build())
         }
+    }
+
+    private fun startFocus(minutes: Int) {
+        val token = Store.token(this)
+        if (token.isNullOrEmpty()) {
+            toast("Сначала подключи устройство")
+            return
+        }
+        val server = Store.server(this)
+        binding.focus15.isEnabled = false
+        binding.focus30.isEnabled = false
+        binding.focus45.isEnabled = false
+        binding.focus60.isEnabled = false
+        lifecycleScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    DeviceApi.startFocus(server, token, minutes)
+                }
+                val endsAtMs = try {
+                    Instant.parse(result.endsAt).toEpochMilli()
+                } catch (_: Exception) {
+                    System.currentTimeMillis() + minutes * 60_000L
+                }
+                Store.setFocusEndsAt(this@MainActivity, endsAtMs)
+                Notifier.showFocus(this@MainActivity, endsAtMs)
+                toast("Фокус включён на $minutes минут")
+            } catch (t: Throwable) {
+                toast("Ошибка: ${t.message}")
+            } finally {
+                refreshFocusUi()
+            }
+        }
+    }
+
+    private fun stopFocus() {
+        val token = Store.token(this)
+        if (token.isNullOrEmpty()) {
+            toast("Сначала подключи устройство")
+            return
+        }
+        val server = Store.server(this)
+        lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    DeviceApi.stopFocus(server, token)
+                }
+                toast("Фокус завершён")
+            } catch (t: Throwable) {
+                toast("Ошибка: ${t.message}")
+            } finally {
+                Store.setFocusEndsAt(this@MainActivity, 0L)
+                Notifier.cancelFocus(this@MainActivity)
+                refreshFocusUi()
+            }
+        }
+    }
+
+    private fun refreshFocusUi() {
+        val active = Store.isFocusActive(this)
+        val focus = if (active) {
+            val remainingMs = Store.focusEndsAt(this) - System.currentTimeMillis()
+            "Фокус до ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(Store.focusEndsAt(this)))} · осталось ~${Math.max(1, Math.round(remainingMs / 60000.0))}м"
+        } else {
+            "Тихие уведомления во время фокуса"
+        }
+        binding.focusStatus.text = focus
+        binding.focus15.isEnabled = !active
+        binding.focus30.isEnabled = !active
+        binding.focus45.isEnabled = !active
+        binding.focus60.isEnabled = !active
+        binding.focusStop.isEnabled = active
+    }
+
+    private val focusTicker = object : Runnable {
+        override fun run() {
+            if (Store.isFocusActive(this@MainActivity)) {
+                refreshFocusUi()
+                binding.focusStatus.postDelayed(this, 30_000)
+            } else {
+                Notifier.cancelFocus(this@MainActivity)
+                refreshFocusUi()
+            }
+        }
+    }
+
+    private fun startFocusTicker() {
+        Handler(Looper.getMainLooper()).postDelayed(focusTicker, 30_000)
     }
 
     private fun deviceName(): String =

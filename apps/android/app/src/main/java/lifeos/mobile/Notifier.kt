@@ -33,6 +33,17 @@ object Notifier {
                 setSound(null, null)
                 enableVibration(false)
             },
+            NotificationChannel("health", "Алерты устройств", NotificationManager.IMPORTANCE_HIGH).apply {
+                enableVibration(true)
+            },
+            NotificationChannel("focus", "Фокус", NotificationManager.IMPORTANCE_DEFAULT).apply {
+                setSound(null, null)
+                enableVibration(false)
+            },
+            NotificationChannel("battle", "Битва со вчерашним днём", NotificationManager.IMPORTANCE_LOW).apply {
+                setSound(null, null)
+                enableVibration(false)
+            },
         )
         nm.createNotificationChannels(channels)
     }
@@ -78,6 +89,34 @@ object Notifier {
         if (changed) {
             prefs.edit().putStringSet(SHOWN, shown).apply()
         }
+    }
+
+    fun showFocus(context: Context, endsAtMs: Long) {
+        if (!hasPermission(context)) return
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val title = "Фокус включён"
+        val body =
+            "Уведомления тихие до " +
+                java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                    .format(java.util.Date(endsAtMs))
+
+        val notification: Notification = NotificationCompat.Builder(context, "focus")
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setOngoing(true)
+            .build()
+
+        try {
+            nm.notify("focus".hashCode(), notification)
+        } catch (_: SecurityException) {
+            // no permission yet
+        }
+    }
+
+    fun cancelFocus(context: Context) {
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.cancel("focus".hashCode())
     }
 
     fun clearShown(context: Context) {

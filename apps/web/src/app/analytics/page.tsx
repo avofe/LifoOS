@@ -62,6 +62,8 @@ interface ChartDay {
   total: number;
   devices: Record<string, number>;
   apps: { name: string; color: string; seconds: number }[];
+  incomplete: boolean;
+  partial: boolean;
 }
 
 interface DeviceMeta {
@@ -125,6 +127,8 @@ export default function AnalyticsPage() {
         total: d.total,
         devices: {},
         apps: d.apps,
+        incomplete: d.incomplete,
+        partial: d.partial,
       };
       for (const dv of d.devices) rec.devices[dv.id] = dv.seconds;
       return rec;
@@ -146,6 +150,11 @@ export default function AnalyticsPage() {
   const maxTotal = useMemo(
     () => Math.max(...chartData.map((d) => d.total), 3600),
     [chartData]
+  );
+
+  const hasGaps = useMemo(
+    () => (data?.daily ?? []).some((d) => d.incomplete),
+    [data]
   );
 
   useEffect(() => {
@@ -348,10 +357,13 @@ export default function AnalyticsPage() {
                       name={dm.name}
                       stackId="dev"
                       fill={dm.color}
-                      opacity={0.85}
                       onClick={(entry: any) => handleBarClick(entry?.payload?.date)}
                       className="cursor-pointer"
-                    />
+                    >
+                      {chartData.map((d, i) => (
+                        <Cell key={i} fillOpacity={d.incomplete ? 0.18 : 0.85} cursor="pointer" />
+                      ))}
+                    </Bar>
                   ))
                 ) : (
                   <Bar
@@ -360,13 +372,23 @@ export default function AnalyticsPage() {
                     fill="#7B6FF0"
                     radius={[3, 3, 0, 0]}
                     maxBarSize={32}
-                    opacity={0.85}
                     onClick={(entry: any) => handleBarClick(entry?.payload?.date)}
                     className="cursor-pointer"
-                  />
+                  >
+                    {chartData.map((d, i) => (
+                      <Cell key={i} fillOpacity={d.incomplete ? 0.18 : 0.85} cursor="pointer" />
+                    ))}
+                  </Bar>
                 )}
               </BarChart>
             </ResponsiveContainer>
+
+            {hasGaps && (
+              <div className="mt-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-400/90">
+                ⚠ В этом периоде есть неполные дни (данные обрываются до 23:00) — цифры
+                занижены.
+              </div>
+            )}
 
             {deviceMeta.length > 1 && (
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -673,8 +695,20 @@ function DayDetail({
   return (
     <div className="rounded-xl border border-accent/20 bg-surface p-4 sm:p-5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-accent-light">
-          {entry.label} · {fmtDate(entry.date)}
+        <span className="flex items-center gap-2">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-accent-light">
+            {entry.label} · {fmtDate(entry.date)}
+          </span>
+          {entry.incomplete && (
+            <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-400">
+              неполные данные
+            </span>
+          )}
+          {entry.partial && !entry.incomplete && (
+            <span className="rounded bg-zinc-700/40 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+              день идёт
+            </span>
+          )}
         </span>
         <span className="font-display text-sm font-bold text-zinc-100">{fmtTime(total)}</span>
       </div>
@@ -910,8 +944,13 @@ function DailyTooltip({
 
   return (
     <div className="min-w-[190px] rounded-lg border border-zinc-700/50 bg-surface-2 p-3 shadow-xl">
-      <div className="mb-1.5 font-display text-[13px] font-semibold text-zinc-100">
+      <div className="mb-1.5 flex items-center gap-2 font-display text-[13px] font-semibold text-zinc-100">
         {fmtDate(d.date)}
+        {d.incomplete && (
+          <span className="rounded bg-amber-500/10 px-1 py-0.5 text-[8.5px] font-bold uppercase tracking-wider text-amber-400">
+            неполные данные
+          </span>
+        )}
       </div>
       <div className="mb-2 text-lg font-bold text-zinc-100">{fmtTime(d.total)}</div>
 

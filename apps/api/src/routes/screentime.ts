@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "@lifeos/db";
 import { fetchScreenTime, fetchAnalytics, fetchDeviceBreakdown, fetchScreenLimits, fetchHourly, fetchRawApps } from "../lib/screentime";
+import { fetchStreak } from "../lib/streak";
 import { requireDeviceToken } from "../lib/auth";
 import { USER_ID } from "../index";
 import { validate, z } from "../validate";
@@ -53,6 +54,15 @@ export function screentimeRouter(): Router {
     } catch (err) {
       console.error("[screentime] GET /raw-apps", err);
       res.status(500).json({ error: "Failed to fetch raw apps" });
+    }
+  });
+
+  router.get("/streak", async (_req, res) => {
+    try {
+      res.json(await fetchStreak());
+    } catch (err) {
+      console.error("[screentime] GET /streak", err);
+      res.status(500).json({ error: "Failed to fetch streak" });
     }
   });
 

@@ -14,6 +14,7 @@ object Store {
     private const val K_LAST_APP_PKG = "last_app_pkg"
     private const val K_LAST_APP_LABEL = "last_app_label"
     private const val K_LAST_APP_START = "last_app_start"
+    private const val K_FOCUS_ENDS = "focus_ends"
 
     fun prefs(c: Context) = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -30,6 +31,12 @@ object Store {
     fun lastAppPkg(c: Context): String? = prefs(c).getString(K_LAST_APP_PKG, null)
     fun lastAppLabel(c: Context): String? = prefs(c).getString(K_LAST_APP_LABEL, null)
     fun lastAppStart(c: Context): Long = prefs(c).getLong(K_LAST_APP_START, 0L)
+
+    fun focusEndsAt(c: Context): Long = prefs(c).getLong(K_FOCUS_ENDS, 0L)
+    fun setFocusEndsAt(c: Context, v: Long) =
+        prefs(c).edit().putLong(K_FOCUS_ENDS, v).apply()
+
+    fun isFocusActive(c: Context): Boolean = focusEndsAt(c) > System.currentTimeMillis()
 
     fun setServer(c: Context, v: String) =
         prefs(c).edit().putString(K_SERVER, v.trimEnd('/')).apply()

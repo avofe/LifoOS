@@ -68,8 +68,14 @@ class CollectorWorker(context: Context, params: WorkerParameters) : CoroutineWor
     private fun fetchAndShowNotifications(ctx: Context, server: String, token: String) {
         try {
             val items = DeviceApi.fetchNotifications(server, token)
+            val filtered =
+                if (Store.isFocusActive(ctx)) {
+                    items.filter { it.channel != "limits" && it.channel != "summary" && it.channel != "battle" }
+                } else {
+                    items
+                }
             Notifier.initChannels(ctx)
-            Notifier.showNew(ctx, items)
+            Notifier.showNew(ctx, filtered)
         } catch (_: Throwable) {
             // notification fetch must not break the collector
         }

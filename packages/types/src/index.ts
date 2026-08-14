@@ -76,6 +76,7 @@ export interface WeekDay {
   height: string;
   over: boolean;
   today: boolean;
+  incomplete: boolean;
 }
 
 export interface AppStat {
@@ -118,6 +119,8 @@ export interface DailyEntry {
   total: number;
   apps: DayApp[];
   devices: DeviceDayStat[];
+  incomplete: boolean;
+  partial: boolean;
 }
 
 export interface TopApp {
@@ -268,6 +271,30 @@ export interface WeatherData {
   wind: string;
   humidity: string;
   forecast: WeatherForecastDay[];
+}
+
+/* ── Streak ── */
+export interface StreakStatus {
+  enabled: boolean;
+  streak: number;
+  record: number;
+  todayInNorm: boolean;
+  todayTotalSec: number;
+  limitMin: number | null;
+  bestUpdatedAt: string | null;
+}
+
+/* ── Focus ── */
+export interface FocusSessionView {
+  id: string;
+  deviceId: string;
+  startedAt: string;
+  endsAt: string;
+  remainingSec: number;
+}
+
+export interface FocusStatus {
+  active: FocusSessionView | null;
 }
 
 /* ── API Error ── */
