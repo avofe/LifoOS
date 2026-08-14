@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, apiGet, getAccessKey, setAccessKey } from "@/lib/api";
-import type { Device, DeviceType } from "@lifeos/types";
+import type { Device, DeviceType, RawAppsData } from "@lifeos/types";
 
 interface Settings {
   groqApiKey?: string;
@@ -10,6 +10,8 @@ interface Settings {
   weatherLocation?: string;
   screenLimitTotal?: number | null;
   screenLimitApps?: Record<string, number>;
+  appAliases?: Record<string, string>;
+  appColors?: Record<string, string>;
 }
 
 interface LimitAppRow {
@@ -60,13 +62,19 @@ export default function SettingsPage() {
   const [limitSaved, setLimitSaved] = useState(false);
   const [newAppName, setNewAppName] = useState("");
   const [newAppMin, setNewAppMin] = useState(0);
+  const [rawApps, setRawApps] = useState<RawAppsData["apps"]>([]);
+  const [appAliases, setAppAliases] = useState<Record<string, string>>({});
+  const [appColors, setAppColors] = useState<Record<string, string>>({});
+  const [appSaving, setAppSaving] = useState(false);
+  const [appSaved, setAppSaved] = useState(false);
 
   const fetchAll = useCallback(async () => {
-    const [s, st, d, l] = await Promise.all([
+    const [s, st, d, l, ra] = await Promise.all([
       apiGet<Settings>("/api/settings"),
       apiGet<Streamer[]>("/api/twitch/streamers"),
       apiGet<Device[]>("/api/devices"),
       apiGet<{ total: { usedSec: number }; apps: { name: string; usedSec: number }[] }>("/api/screentime/limits"),
+      apiGet<RawAppsData>("/api/screentime/raw-apps"),
     ]);
     if (s) {
       setSettings(s);
@@ -75,12 +83,15 @@ export default function SettingsPage() {
       setWeatherLocation(s.weatherLocation ?? "");
       setLimitTotal(s.screenLimitTotal ?? 0);
       setAppLimits(s.screenLimitApps ?? {});
+      setAppAliases(s.appAliases ?? {});
+      setAppColors(s.appColors ?? {});
     }
     setStreamers(st ?? []);
     setDevices(d ?? []);
     if (l) {
       setLimitApps(l.apps);
     }
+    setRawApps(ra?.apps ?? []);
     setAccessKeyState(getAccessKey());
     setLoading(false);
   }, []);
@@ -188,6 +199,40 @@ export default function SettingsPage() {
     setAppLimits((prev) => ({ ...prev, [name]: newAppMin }));
     setNewAppName("");
     setNewAppMin(0);
+  };
+
+  const handleSaveAppNames = async () => {
+    setAppSaving(true);
+    try {
+      await apiFetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          appAliases,
+          appColors,
+        }),
+      });
+      setAppSaved(true);
+      setTimeout(() => setAppSaved(false), 2000);
+      const d = await apiGet<RawAppsData>("/api/screentime/raw-apps");
+      setRawApps(d?.apps ?? []);
+    } catch {
+    } finally {
+      setAppSaving(false);
+    }
+  };
+
+  const clearAppOverrides = (key: string) => {
+    setAppAliases((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+    setAppColors((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
   };
 
   function fmtUsed(totalSec: number): string {
@@ -429,6 +474,86 @@ export default function SettingsPage() {
               <span className="text-xs text-emerald-400">Сохранено</span>
             )}
           </div>
+        </div>
+      </section>
+
+      {/* App names & colors */}
+      <section className="rounded-xl border border-zinc-800 bg-surface p-5">
+        <h2 className="mb-1 text-sm font-semibold text-zinc-300">
+          Приложения: названия и цвета
+        </h2>
+        <p className="mb-4 text-xs text-zinc-600">
+          Переименуй системные идентификаторы (например,{" "}
+          <code className="text-zinc-400">com.zhiliaoapp.musically</code> → TikTok)
+          и настрой цвета. Изменения применятся на главной, в аналитике и лимитах.
+        </p>
+
+        {rawApps.length === 0 ? (
+          <p className="text-sm text-zinc-600">
+            Сегодня пока нет данных об использовании приложений.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {rawApps.slice(0, 30).map((a) => (
+              <div
+                key={a.key}
+                className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2"
+              >
+                <input
+                  type="color"
+                  value={appColors[a.key] ?? a.color}
+                  onChange={(e) =>
+                    setAppColors((prev) => ({ ...prev, [a.key]: e.target.value }))
+                  }
+                  className="h-8 w-10 flex-shrink-0 cursor-pointer rounded border border-zinc-700 bg-zinc-900 p-0.5"
+                  title="Цвет приложения"
+                />
+                <div className="min-w-0 flex-1">
+                  <input
+                    type="text"
+                    value={appAliases[a.key] ?? a.name}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setAppAliases((prev) => {
+                        const next = { ...prev };
+                        const clean = v.trim();
+                        if (clean && clean !== a.name) next[a.key] = clean;
+                        else delete next[a.key];
+                        return next;
+                      });
+                    }}
+                    className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200 outline-none focus:border-accent"
+                  />
+                  <span
+                    className="mt-0.5 block truncate font-mono text-[10px] text-zinc-600"
+                    title={a.key}
+                  >
+                    {a.key} · {a.time}
+                  </span>
+                </div>
+                <button
+                  onClick={() => clearAppOverrides(a.key)}
+                  className="flex-shrink-0 text-zinc-600 transition hover:text-red-400"
+                  title="Сбросить переименование и цвет"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            onClick={handleSaveAppNames}
+            disabled={appSaving}
+            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-50"
+          >
+            {appSaving ? "Сохранение..." : "Сохранить"}
+          </button>
+          {appSaved && (
+            <span className="text-xs text-emerald-400">Сохранено</span>
+          )}
         </div>
       </section>
 

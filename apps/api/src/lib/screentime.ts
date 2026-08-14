@@ -103,22 +103,75 @@ const APP_CATEGORIES: { match: (app: string, title: string) => boolean; name: st
   { match: (a, t) => /chrome|firefox|edge|browser|opera/i.test(a), name: "", color: "#52526A" },
 ];
 
+const FALLBACK_PALETTE = [
+  "#7B6FF0", "#3ECF6E", "#F5A623", "#3B9EFF", "#F07070", "#2AABEE",
+  "#E91E63", "#00BCD4", "#FF9800", "#9C27B0", "#CDDC39", "#FF5722",
+  "#03A9F4", "#8BC34A", "#FF4081", "#00C853", "#FF6D00", "#26C6DA",
+  "#F06292", "#FFEB3B", "#536DFE", "#00E5FF",
+];
+
+function hashKey(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+function defaultColorFor(key: string): string {
+  return FALLBACK_PALETTE[hashKey(key) % FALLBACK_PALETTE.length];
+}
+
+let appAliasesCache: Record<string, string> | null = null;
+let appColorsCache: Record<string, string> | null = null;
+
+export function invalidateAppMeta() {
+  appAliasesCache = null;
+  appColorsCache = null;
+}
+
+export async function getAppMeta(): Promise<{
+  aliases: Record<string, string>;
+  colors: Record<string, string>;
+}> {
+  if (appAliasesCache === null) {
+    const settings = await prisma.setting.findMany({ where: { userId: USER_ID } });
+    const map: Record<string, any> = {};
+    for (const s of settings) map[s.key] = s.value;
+    appAliasesCache =
+      map.appAliases && typeof map.appAliases === "object"
+        ? (map.appAliases as Record<string, string>)
+        : {};
+    appColorsCache =
+      map.appColors && typeof map.appColors === "object"
+        ? (map.appColors as Record<string, string>)
+        : {};
+  }
+  return { aliases: appAliasesCache ?? {}, colors: appColorsCache ?? {} };
+}
+
 function categorize(app: string, title: string): { name: string; color: string; skip: boolean } {
   if (isSystem(app, title)) return { name: "", color: "#52526A", skip: true };
+
+  const aliases = appAliasesCache ?? {};
+  const colors = appColorsCache ?? {};
+
+  const alias = aliases[app]?.trim();
+  if (alias) {
+    return { name: alias, color: colors[app] ?? colors[alias] ?? defaultColorFor(app), skip: false };
+  }
 
   for (const c of APP_CATEGORIES) {
     if (c.match(app, title)) {
       if (c.name === "") {
         const site = extractBrowserSite(title);
-        if (site && site.length < 40) {
-          return { name: site, color: c.color, skip: false };
-        }
-        return { name: "Браузер", color: c.color, skip: false };
+        const base = site && site.length < 40 ? site : "Браузер";
+        return { name: base, color: colors[app] ?? colors[base] ?? defaultColorFor(base), skip: false };
       }
-      return { name: c.name, color: c.color, skip: false };
+      return { name: c.name, color: colors[app] ?? colors[c.name] ?? c.color, skip: false };
     }
   }
-  return { name: app || "Другое", color: "#52526A", skip: false };
+
+  const base = app || "Другое";
+  return { name: base, color: colors[app] ?? colors[base] ?? defaultColorFor(app), skip: false };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -195,6 +248,7 @@ export async function fetchScreenTimeFromDb(deviceId?: string): Promise<{
   forecast: ScreenTimeForecast;
 } | null> {
   const tz = await getTimezone();
+  await getAppMeta();
   const now = new Date();
 
   const todayStart = getDayStart(0, tz, now);
@@ -276,6 +330,7 @@ export async function fetchAnalyticsFromDb(
   todayTotal: number;
 } | null> {
   const tz = await getTimezone();
+  await getAppMeta();
   const now = new Date();
 
   daysBack = Math.max(7, Math.min(30, daysBack));
@@ -382,6 +437,7 @@ export async function fetchScreenTimeFromAw(): Promise<{
   forecast: ScreenTimeForecast;
 } | null> {
   const now = new Date();
+  await getAppMeta();
   const buckets = await fetchBuckets().catch(() => null);
   if (!buckets) return null;
 
@@ -486,6 +542,7 @@ export async function fetchAnalyticsFromAw(
   todayTotal: number;
 } | null> {
   const now = new Date();
+  await getAppMeta();
   const buckets = await fetchBuckets().catch(() => null);
   if (!buckets) return null;
 
@@ -606,6 +663,7 @@ export async function fetchScreenLimits(): Promise<{
   apps: { name: string; limitMin: number | null; usedSec: number; over: boolean }[];
 }> {
   const tz = await getTimezone();
+  await getAppMeta();
   const now = new Date();
 
   const todayStart = getDayStart(0, tz, now);
@@ -658,6 +716,47 @@ export async function fetchScreenLimits(): Promise<{
     },
     apps,
   };
+}
+
+export async function fetchRawApps(): Promise<{
+  apps: { key: string; name: string; seconds: number; time: string; color: string }[];
+}> {
+  const tz = await getTimezone();
+  const now = new Date();
+  const todayStart = getDayStart(0, tz, now);
+  const end = getNextDayStart(todayStart);
+
+  const events = await fetchEventsFromDb(undefined, todayStart, end);
+
+  await getAppMeta();
+
+  const byKey = new Map<string, { key: string; seconds: number; title: string }>();
+  for (const e of events) {
+    if (e.duration < 1) continue;
+    if (isSystem(e.app, e.title ?? "")) continue;
+    const cur = byKey.get(e.app);
+    if (cur) {
+      cur.seconds += e.duration;
+      if (!cur.title && e.title) cur.title = e.title;
+    } else {
+      byKey.set(e.app, { key: e.app, seconds: e.duration, title: e.title ?? "" });
+    }
+  }
+
+  const apps = Array.from(byKey.values())
+    .sort((a, b) => b.seconds - a.seconds)
+    .map((a) => {
+      const cat = categorize(a.key, a.title);
+      return {
+        key: a.key,
+        name: cat.name,
+        seconds: a.seconds,
+        time: fmtTime(a.seconds),
+        color: cat.color,
+      };
+    });
+
+  return { apps };
 }
 
 export async function fetchScreenTime(deviceId?: string) {

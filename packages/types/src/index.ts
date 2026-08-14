@@ -195,6 +195,19 @@ export interface ScreenLimitsData {
   apps: { name: string; limitMin: number | null; usedSec: number; over: boolean }[];
 }
 
+/* ── Raw apps (rename / recolor) ── */
+export interface RawAppInfo {
+  key: string;
+  name: string;
+  seconds: number;
+  time: string;
+  color: string;
+}
+
+export interface RawAppsData {
+  apps: RawAppInfo[];
+}
+
 /* ── Timeline ── */
 export interface TimelineEvent {
   time: string;

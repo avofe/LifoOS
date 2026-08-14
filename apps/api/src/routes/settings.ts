@@ -5,6 +5,7 @@ import { reinitGroq } from "../lib/gemini";
 import { reinitYouTube } from "../lib/youtube";
 import { setWeatherLocation } from "../lib/weather";
 import { setTimezoneCache } from "../lib/time";
+import { invalidateAppMeta } from "../lib/screentime";
 import { validate, z } from "../validate";
 
 const updateSettingsSchema = z.object({
@@ -16,6 +17,8 @@ const updateSettingsSchema = z.object({
   screenLimitApps: z
     .record(z.string(), z.number().int().min(0).max(1440))
     .optional(),
+  appAliases: z.record(z.string(), z.string().min(1).max(200)).optional(),
+  appColors: z.record(z.string(), z.string().regex(/^#[0-9a-fA-F]{6}$/)).optional(),
 });
 
 export function createSettingsRouter(): Router {
@@ -41,7 +44,7 @@ export function createSettingsRouter(): Router {
 
   router.put("/", validate(updateSettingsSchema), async (req, res) => {
     try {
-      const { groqApiKey, youtubeApiKey, timezone, weatherLocation, screenLimitTotal, screenLimitApps } = req.body;
+      const { groqApiKey, youtubeApiKey, timezone, weatherLocation, screenLimitTotal, screenLimitApps, appAliases, appColors } = req.body;
 
       const upserts: Promise<any>[] = [];
 
@@ -109,7 +112,29 @@ export function createSettingsRouter(): Router {
         );
       }
 
+      if (appAliases !== undefined) {
+        upserts.push(
+          prisma.setting.upsert({
+            where: { userId_key: { userId: USER_ID, key: "appAliases" } },
+            create: { userId: USER_ID, key: "appAliases", value: appAliases },
+            update: { value: appAliases },
+          })
+        );
+      }
+
+      if (appColors !== undefined) {
+        upserts.push(
+          prisma.setting.upsert({
+            where: { userId_key: { userId: USER_ID, key: "appColors" } },
+            create: { userId: USER_ID, key: "appColors", value: appColors },
+            update: { value: appColors },
+          })
+        );
+      }
+
       await Promise.all(upserts);
+
+      invalidateAppMeta();
 
       const settings = await prisma.setting.findMany({
         where: { userId: USER_ID },
