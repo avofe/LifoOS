@@ -97,7 +97,7 @@ export function DevicesSection() {
             </span>
             <button
               onClick={stopFocus}
-              className="shrink-0 rounded bg-zinc-800 px-2 py-1 text-[10.5px] text-zinc-300 transition hover:bg-zinc-700"
+              className="chip shrink-0 border-red-500/20 text-red-400 hover:text-red-300"
             >
               ✕ Стоп
             </button>
@@ -110,7 +110,7 @@ export function DevicesSection() {
                 <button
                   key={m}
                   onClick={() => startFocus(m)}
-                  className="rounded bg-zinc-800 px-2 py-1 text-[10.5px] text-zinc-300 transition hover:bg-accent hover:text-white"
+                  className="chip hover:bg-accent hover:text-white"
                 >
                   {m}
                 </button>
@@ -126,7 +126,7 @@ export function DevicesSection() {
           <CardSkeleton className="h-[38px] w-full" />
         </div>
       ) : devices.length === 0 ? (
-        <p className="py-4 text-center text-xs text-zinc-600">Устройства не подключены</p>
+        <p className="py-4 text-center text-xs text-zinc-500">Устройства не подключены</p>
       ) : (
         <div className="flex flex-col gap-1.5">
           {devices.slice(0, 5).map((d) => {
@@ -148,7 +148,7 @@ export function DevicesSection() {
                   )}
                   <span
                     className={`font-mono text-[9.5px] ${
-                      seen.stale ? "text-amber-400" : "text-zinc-600"
+                      seen.stale ? "text-amber-400" : "text-zinc-500"
                     }`}
                     title={`Синхронизация: ${seen.stale ? "давно молчит" : "в норме"}`}
                   >

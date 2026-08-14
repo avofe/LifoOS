@@ -80,30 +80,30 @@ export function HabitsSection() {
       }
     >
       {loading ? (
-        <p className="py-4 text-center text-xs text-zinc-600">Загрузка...</p>
+        <p className="py-4 text-center text-xs text-zinc-500">Загрузка...</p>
       ) : habits.length === 0 ? (
-        <p className="py-4 text-center text-xs text-zinc-600">
+        <p className="py-4 text-center text-xs text-zinc-500">
           Пока нет привычек. Добавь первую, чтобы следить за повторениями.
         </p>
       ) : (
         <div className="overflow-x-auto">
           <div className="min-w-[560px]">
             <div className="grid grid-cols-[minmax(140px,1fr)_repeat(7,36px)] gap-1 pb-2">
-              <div className="pl-1 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-600">
+              <div className="pl-1 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                 Привычка
               </div>
               {days.map((d) => (
                 <div
                   key={d}
                   className={`text-center font-mono text-[10px] uppercase ${
-                    d === today ? "text-accent-light" : "text-zinc-600"
+                    d === today ? "text-accent-light" : "text-zinc-500"
                   }`}
                   title={dayLabel(d)}
                 >
                   {dayLabel(d, true)}
                 </div>
               ))}
-              <div className="pl-1 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-600">
+              <div className="pl-1 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                 Стрик
               </div>
               {days.map((d) => (
@@ -128,7 +128,7 @@ export function HabitsSection() {
                         key={d}
                         onClick={() => toggle(h.id, d)}
                         title={`${d}: ${done ? "отметить как невыполнено" : "отметить выполненным"}`}
-                        className={`mx-auto flex h-6 w-6 items-center justify-center rounded border text-[11px] transition ${
+                        className={`mx-auto flex h-7 w-7 items-center justify-center rounded border text-[11px] transition ${
                           done
                             ? "border-emerald-500 bg-emerald-500/90 text-white"
                             : "border-zinc-700 bg-transparent text-transparent hover:border-emerald-500"
@@ -145,14 +145,15 @@ export function HabitsSection() {
                       </span>
                     )}
                     {h.record > 1 && (
-                      <span className="font-mono text-[10px] text-zinc-600">
+                      <span className="font-mono text-[10px] text-zinc-500">
                         р{h.record}
                       </span>
                     )}
                     <button
                       onClick={() => remove(h.id)}
                       title="Удалить привычку"
-                      className="px-1 text-xs text-zinc-600 opacity-0 transition hover:text-red-400 group-hover:opacity-100"
+                      aria-label={`Удалить привычку ${h.name}`}
+                      className="touch-reveal rounded-md px-1.5 py-1 text-xs text-zinc-500 transition hover:text-red-400"
                     >
                       ✕
                     </button>
@@ -186,12 +187,12 @@ export function HabitsSection() {
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addHabit()}
             placeholder="Название привычки..."
-            className="min-w-0 flex-1 rounded-md border border-zinc-800 bg-black/40 px-3 py-1.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none transition focus:border-accent/60"
+            className="field min-w-0 flex-1 bg-black/40 py-1.5"
           />
           <button
             onClick={addHabit}
             disabled={!name.trim()}
-            className="flex-shrink-0 rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-40"
+            className="btn-accent flex-shrink-0 py-1.5"
           >
             Добавить
           </button>
@@ -199,7 +200,7 @@ export function HabitsSection() {
       ) : (
         <button
           onClick={() => setShowAdd(true)}
-          className="mt-3 w-full rounded-md border border-dashed border-zinc-700 py-2 text-xs text-zinc-500 transition hover:border-accent/50 hover:text-accent-light"
+          className="mt-3 w-full rounded-md border border-dashed border-zinc-700 py-2.5 text-xs text-zinc-400 transition hover:border-accent/50 hover:text-accent-light"
         >
           + добавить привычку
         </button>

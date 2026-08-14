@@ -35,7 +35,7 @@ export function SubscriptionCard(props: Props) {
   });
 
   return (
-    <div className="group flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 transition hover:border-zinc-700 sm:flex-row sm:items-center sm:justify-between">
+    <div className="card group flex flex-col gap-3 p-4 transition hover:border-zinc-700 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 flex-col gap-1.5">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-zinc-200">{props.name}</span>
@@ -64,15 +64,15 @@ export function SubscriptionCard(props: Props) {
         <div className="flex gap-2">
           <button
             onClick={() => props.onEdit(props.id)}
-            className="rounded bg-zinc-800 px-2 py-1 text-[11px] text-zinc-400 hover:text-zinc-200"
+            className="chip"
           >
-            Изменить
+            ✎ Изменить
           </button>
           <button
             onClick={() => props.onDelete(props.id)}
-            className="rounded bg-red-500/10 px-2 py-1 text-[11px] text-red-400 hover:bg-red-500/20"
+            className="chip border-red-500/20 text-red-400 hover:text-red-300"
           >
-            Удалить
+            ✕ Удалить
           </button>
         </div>
       </div>

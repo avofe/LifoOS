@@ -55,7 +55,7 @@ export function DaySummary() {
       data.streams.length > 0);
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-zinc-700/50 bg-surface p-5 pb-[18px] pl-6">
+    <div className="card relative overflow-hidden p-5 pb-[18px] pl-6">
       <div className="absolute left-0 top-5 bottom-5 w-[2px] rounded-full bg-gradient-to-b from-transparent via-accent to-transparent opacity-40 animate-vline" />
 
       <div className="mb-3.5 flex items-center justify-between">
@@ -68,15 +68,16 @@ export function DaySummary() {
         <button
           onClick={fetchSummary}
           disabled={loading}
-          className="flex h-6 w-6 items-center justify-center rounded-md text-xs text-zinc-500 transition hover:bg-surface-2 hover:text-accent-light disabled:opacity-40"
+          className="btn-icon disabled:cursor-not-allowed disabled:opacity-40"
           title="Обновить сводку"
+          aria-label="Обновить сводку"
         >
           ⟳
         </button>
       </div>
 
       {loading && !data && (
-        <p className="py-4 text-center text-xs text-zinc-600">Загрузка...</p>
+        <p className="py-4 text-center text-xs text-zinc-500">Загрузка...</p>
       )}
 
       {error && (
@@ -86,7 +87,7 @@ export function DaySummary() {
       )}
 
       {!loading && !error && !hasContent && (
-        <p className="py-4 text-center text-xs text-zinc-600">
+        <p className="py-4 text-center text-xs text-zinc-500">
           Данных пока нет. Данные появятся, когда устройства начнут присылать
           активность.
         </p>
@@ -204,7 +205,7 @@ export function DaySummary() {
         </div>
       )}
 
-      <div className="mt-3.5 rounded-lg border border-zinc-800 bg-surface-2 p-[9px_12px] text-[11.5px] leading-relaxed text-zinc-500">
+      <div className="mt-3.5 rounded-lg border border-zinc-800 bg-surface-2 p-[9px_12px] text-[11.5px] leading-relaxed text-zinc-400">
         💡 Сводка собирается из твоих данных без AI — всегда актуально и без
         ошибок.
       </div>
@@ -215,7 +216,7 @@ export function DaySummary() {
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <>
-      <div className="mb-2 mt-3.5 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-600 first:mt-0">
+      <div className="label mb-2 mt-3.5 first:mt-0">
         {label}
       </div>
       <div className="flex flex-col gap-[7px]">{children}</div>

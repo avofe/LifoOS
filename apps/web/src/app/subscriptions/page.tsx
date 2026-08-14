@@ -89,7 +89,7 @@ export default function SubscriptionsPage() {
     : undefined;
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 bg-black p-4 sm:p-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 bg-black p-4 sm:p-6">
       {/* Header */}
           <PageHeader
             title="Подписки"
@@ -97,7 +97,7 @@ export default function SubscriptionsPage() {
             actions={
               <button
                 onClick={handleAdd}
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition hover:brightness-110"
+                className="btn-accent px-4 py-2"
               >
                 + Добавить
               </button>
@@ -125,7 +125,7 @@ export default function SubscriptionsPage() {
           {/* List */}
           <div className="flex flex-col gap-2">
             {subs.length === 0 && (
-              <p className="py-8 text-center text-sm text-zinc-600">
+              <p className="py-8 text-center text-sm text-zinc-500">
                 Нет подписок. Нажми «+ Добавить» чтобы создать первую.
               </p>
             )}
@@ -167,10 +167,8 @@ export default function SubscriptionsPage() {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-      <div className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">
-        {label}
-      </div>
+    <div className="card p-4">
+      <div className="label">{label}</div>
       <div className="mt-1 font-mono text-xl font-semibold text-zinc-200">
         {value}
       </div>

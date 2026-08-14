@@ -1,3 +1,63 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid rgba(123, 111, 240, 0.65);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: rgba(123, 111, 240, 0.35);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-vline,
+    .animate-blink,
+    .animate-ring,
+    .animate-pulse,
+    .animate-spin {
+      animation: none !important;
+    }
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-zinc-800 bg-surface;
+  }
+
+  .label {
+    @apply font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-400;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-zinc-800 bg-surface-2 px-3 py-2 text-sm text-zinc-300 transition hover:text-zinc-100;
+  }
+
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-md px-2 py-1 text-xs text-zinc-400 transition hover:text-zinc-100;
+  }
+
+  .btn-icon {
+    @apply flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-zinc-800 bg-surface-2 text-sm text-zinc-400 transition hover:text-zinc-100;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded border border-zinc-800 bg-surface-2 px-2 py-1 font-mono text-[11px] text-zinc-300 transition hover:text-accent-light;
+  }
+
+  .field {
+    @apply rounded-md border border-zinc-800 bg-surface-2 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 outline-none transition focus:border-accent/60;
+  }
+
+  /* row actions: hidden on desktop until hover, always visible on touch */
+  .touch-reveal {
+    @apply opacity-100 md:opacity-0 md:group-hover:opacity-100;
+  }
+}

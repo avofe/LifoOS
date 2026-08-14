@@ -68,7 +68,7 @@ export function SubsSection() {
               <div className="font-display text-2xl font-bold leading-none text-zinc-100">
                 {stats ? fmtCost(stats.monthlyTotal) : "—"}
               </div>
-              <div className="mt-1 text-[11px] text-zinc-500">
+              <div className="mt-1 text-[11px] text-zinc-400">
                 {stats
                   ? `${stats.total} сервисов · ${fmtCost(stats.yearlyTotal)} в год`
                   : ""}

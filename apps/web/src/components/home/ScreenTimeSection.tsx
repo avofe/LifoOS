@@ -59,7 +59,7 @@ export function ScreenTimeSection() {
               <div className="font-display text-2xl font-bold leading-none text-zinc-100">
                 {st.totalToday ?? "—"}
               </div>
-              <div className="mt-1 text-[11px] text-zinc-500">
+              <div className="mt-1 text-[11px] text-zinc-400">
                 {st.apps.length > 0
                   ? st.apps.slice(0, 2).map((a) => a.name).join(", ")
                   : "данных пока нет"}
@@ -98,7 +98,7 @@ export function ScreenTimeSection() {
                       style={{ height: d.height }}
                     />
                     <span
-                      className={`font-mono text-[9px] ${d.incomplete ? "text-zinc-700" : "text-zinc-600"}`}
+                      className={`font-mono text-[9px] ${d.incomplete ? "text-zinc-700" : "text-zinc-500"}`}
                     >
                       {d.label}
                     </span>
@@ -155,7 +155,7 @@ export function ScreenTimeSection() {
                   style={{ width: `${limitPct}%` }}
                 />
               </div>
-              <span className="shrink-0 font-mono text-[10px] text-zinc-500">
+              <span className="shrink-0 font-mono text-[10px] text-zinc-400">
                 {limitPct}% · лимит {limit?.limitMin ? fmtDuration(limit.limitMin * 60) : ""}
               </span>
             </div>

@@ -86,23 +86,25 @@ export function PlanSection() {
       <div className="mb-3 flex items-center gap-2">
         <button
           onClick={() => setDate(addDaysKey(date, -1))}
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-800 bg-surface-2 text-sm text-zinc-400 transition hover:text-zinc-200"
+          aria-label="Предыдущий день"
+          className="btn-icon"
         >
           ◀
         </button>
         <button
           onClick={() => setDate(todayKey())}
-          className={`flex-1 rounded-md border px-2 py-1.5 font-mono text-[11px] uppercase tracking-wider transition ${
+          className={`flex-1 rounded-md border border-zinc-800 bg-surface-2 px-2 py-2 font-mono text-[11px] uppercase tracking-wider transition ${
             isToday(date)
-              ? "border-zinc-800 bg-surface-2 text-accent-light"
-              : "border-zinc-800 bg-surface-2 text-zinc-300 hover:text-accent-light"
+              ? "text-accent-light"
+              : "text-zinc-300 hover:text-accent-light"
           }`}
         >
           {isToday(date) ? "Сегодня" : dayLabel(date)}
         </button>
         <button
           onClick={() => setDate(addDaysKey(date, 1))}
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-800 bg-surface-2 text-sm text-zinc-400 transition hover:text-zinc-200"
+          aria-label="Следующий день"
+          className="btn-icon"
         >
           ▶
         </button>
@@ -115,21 +117,22 @@ export function PlanSection() {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addTask()}
           placeholder="Добавить задачу..."
-          className="min-w-0 flex-1 rounded-md border border-zinc-800 bg-surface-2 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 outline-none transition focus:border-accent/60"
+          className="field min-w-0 flex-1"
         />
         <button
           onClick={addTask}
           disabled={!text.trim()}
-          className="flex-shrink-0 rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-40"
+          aria-label="Добавить задачу"
+          className="btn-accent flex-shrink-0"
         >
           +
         </button>
       </div>
 
       {loading ? (
-        <p className="py-4 text-center text-xs text-zinc-600">Загрузка...</p>
+        <p className="py-4 text-center text-xs text-zinc-500">Загрузка...</p>
       ) : tasks.length === 0 ? (
-        <p className="py-4 text-center text-xs text-zinc-600">
+        <p className="py-4 text-center text-xs text-zinc-500">
           На этот день задач нет
         </p>
       ) : (
@@ -141,7 +144,8 @@ export function PlanSection() {
             >
               <button
                 onClick={() => toggle(t.id, t.done)}
-                className={`flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded border text-[11px] transition ${
+                aria-label={t.done ? "Отметить как невыполненную" : "Отметить выполненной"}
+                className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border text-[11px] transition ${
                   t.done
                     ? "border-emerald-500 bg-emerald-500 text-white"
                     : "border-zinc-600 bg-transparent text-transparent hover:border-emerald-500"
@@ -151,7 +155,7 @@ export function PlanSection() {
               </button>
               <span
                 className={`min-w-0 flex-1 text-sm ${
-                  t.done ? "text-zinc-600 line-through" : "text-zinc-200"
+                  t.done ? "text-zinc-500 line-through" : "text-zinc-200"
                 }`}
               >
                 {t.text}
@@ -160,7 +164,7 @@ export function PlanSection() {
                 <button
                   onClick={() => carry(t.id)}
                   title="Перенести на завтра"
-                  className="flex-shrink-0 rounded px-1.5 py-0.5 text-[11px] text-zinc-500 opacity-0 transition hover:text-accent-light group-hover:opacity-100"
+                  className="touch-reveal flex-shrink-0 rounded-md px-2 py-1.5 text-[11px] text-zinc-400 transition hover:text-accent-light"
                 >
                   →завтра
                 </button>
@@ -168,7 +172,8 @@ export function PlanSection() {
               <button
                 onClick={() => remove(t.id)}
                 title="Удалить"
-                className="flex-shrink-0 px-1 text-xs text-zinc-600 opacity-0 transition hover:text-red-400 group-hover:opacity-100"
+                aria-label="Удалить задачу"
+                className="touch-reveal flex-shrink-0 rounded-md px-2 py-1.5 text-xs text-zinc-500 transition hover:text-red-400"
               >
                 ✕
               </button>

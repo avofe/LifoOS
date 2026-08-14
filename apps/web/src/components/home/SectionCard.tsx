@@ -18,7 +18,7 @@ export function SectionCard({
   return (
     <Link
       href={href}
-      className={`group flex flex-col rounded-xl border border-zinc-800 bg-surface p-[16px_18px] transition hover:border-zinc-700/70 ${className ?? ""}`}
+      className={`card group flex flex-col p-[16px_18px] transition hover:border-zinc-700/70 ${className ?? ""}`}
     >
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">

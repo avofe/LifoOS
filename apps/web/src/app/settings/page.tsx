@@ -277,7 +277,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 bg-black p-4 sm:p-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 bg-black p-4 sm:p-6">
       <h1 className="text-lg font-semibold text-zinc-200">Настройки</h1>
 
       {/* Server access key */}
@@ -300,7 +300,7 @@ export default function SettingsPage() {
           <button
             onClick={handleSaveAccessKey}
             disabled={!accessKey.trim()}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-50"
+            className="btn-accent"
           >
             Сохранить
           </button>
@@ -354,7 +354,7 @@ export default function SettingsPage() {
             <button
               onClick={handleSaveSettings}
               disabled={saving}
-              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-50"
+              className="btn-accent"
             >
               {saving ? "Сохранение..." : "Сохранить"}
             </button>
@@ -456,7 +456,7 @@ export default function SettingsPage() {
             <button
               onClick={handleAddAppLimit}
               disabled={!newAppName.trim() || newAppMin <= 0}
-              className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-50"
+              className="btn-accent px-3 py-1.5"
             >
               Добавить лимит
             </button>
@@ -466,7 +466,7 @@ export default function SettingsPage() {
             <button
               onClick={handleSaveLimits}
               disabled={limitSaving}
-              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-50"
+              className="btn-accent"
             >
               {limitSaving ? "Сохранение..." : "Сохранить лимиты"}
             </button>
@@ -547,7 +547,7 @@ export default function SettingsPage() {
           <button
             onClick={handleSaveAppNames}
             disabled={appSaving}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-50"
+            className="btn-accent"
           >
             {appSaving ? "Сохранение..." : "Сохранить"}
           </button>
@@ -626,7 +626,7 @@ export default function SettingsPage() {
               </code>
               <button
                 onClick={handleCopyToken}
-                className="rounded-lg bg-accent px-3 py-2 text-xs font-medium text-white transition hover:brightness-110"
+                className="btn-accent px-3 py-2 text-xs"
               >
                 {copied ? "Скопировано" : "Копировать"}
               </button>
@@ -661,7 +661,7 @@ export default function SettingsPage() {
           <button
             onClick={handleRegisterDevice}
             disabled={!devName.trim()}
-            className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-50"
+            className="btn-accent px-3 py-2"
           >
             Зарегистрировать
           </button>

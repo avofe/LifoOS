@@ -27,7 +27,7 @@ export default function TwitchPage() {
   const offline = streamers.filter((s) => !s.online);
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 bg-black p-4 sm:p-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 bg-black p-4 sm:p-6">
       {/* Header */}
           <PageHeader
             title="Twitch · стримеры"

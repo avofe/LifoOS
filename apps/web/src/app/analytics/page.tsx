@@ -217,7 +217,7 @@ export default function AnalyticsPage() {
               <button
                 key={n}
                 onClick={() => setDays(n)}
-                className={`rounded-md px-3 py-1.5 font-mono text-[11px] transition ${
+                className={`rounded-md px-3 py-2 font-mono text-[11px] transition ${
                   days === n
                     ? "bg-accent font-bold text-white"
                     : "text-zinc-400 hover:text-zinc-100"
@@ -232,7 +232,7 @@ export default function AnalyticsPage() {
           <div className="flex max-w-[calc(100vw-2rem)] items-center gap-1 overflow-x-auto rounded-lg border border-zinc-800 bg-surface-2 p-0.5 sm:max-w-none">
             <button
               onClick={() => setDeviceId("")}
-              className={`whitespace-nowrap rounded-md px-3 py-1.5 text-[11px] transition ${
+              className={`whitespace-nowrap rounded-md px-3 py-2 text-[11px] transition ${
                 deviceId === ""
                   ? "bg-accent font-medium text-white"
                   : "text-zinc-400 hover:text-zinc-100"
@@ -244,7 +244,7 @@ export default function AnalyticsPage() {
               <button
                 key={d.id}
                 onClick={() => setDeviceId(d.id)}
-                className={`whitespace-nowrap rounded-md px-3 py-1.5 text-[11px] transition ${
+                className={`whitespace-nowrap rounded-md px-3 py-2 text-[11px] transition ${
                   deviceId === d.id
                     ? "bg-accent font-medium text-white"
                     : "text-zinc-400 hover:text-zinc-100"
@@ -276,7 +276,7 @@ export default function AnalyticsPage() {
           {/* summary cards */}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatCard label="Сегодня" value={fmtTime(data.todayTotal)}>
-              <span className="text-[11px] text-zinc-500">
+              <span className="text-[11px] text-zinc-400">
                 {deviceMeta.length > 1 && deviceId === ""
                   ? `${deviceMeta.length} устройства`
                   : "по всем устройствам"}
@@ -290,7 +290,7 @@ export default function AnalyticsPage() {
             />
 
             <StatCard label="Последние 7 дней" value={fmtTime(wc?.current ?? 0)}>
-              <span className="text-[11px] text-zinc-500">
+              <span className="text-[11px] text-zinc-400">
                 ~{Math.round(((wc?.current ?? 0) / 7 / 3600) * 10) / 10}ч/день
               </span>
             </StatCard>
@@ -304,7 +304,7 @@ export default function AnalyticsPage() {
               }
               tone={wc?.diffPercent == null ? undefined : wc.diffPercent <= 0 ? "good" : "bad"}
             >
-              <span className="text-[11px] text-zinc-500">
+              <span className="text-[11px] text-zinc-400">
                 {wc?.diffPercent == null
                   ? "недостаточно данных"
                   : `${wc.diffPercent <= 0 ? "↓ меньше" : "↑ больше"} · было ${fmtTime(wc.previous)}`}
@@ -462,7 +462,7 @@ export default function AnalyticsPage() {
                       "—"
                     )}
                   </div>
-                  <div className="flex items-center gap-1.5 text-[10px] text-zinc-600">
+                  <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
                     меньше
                     <span className="h-2.5 w-10 rounded-sm" style={{ background: "linear-gradient(to right, rgba(123,111,240,0.08), rgba(123,111,240,0.95))" }} />
                     больше
@@ -470,18 +470,16 @@ export default function AnalyticsPage() {
                 </div>
               </>
             ) : (
-              <p className="py-6 text-center text-xs text-zinc-600">Нет данных по часам</p>
+              <p className="py-6 text-center text-xs text-zinc-500">Нет данных по часам</p>
             )}
           </Card>
 
           {/* top apps */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-            <div className="hidden rounded-xl border border-zinc-800 bg-surface p-5 sm:block lg:col-span-2">
-              <div className="mb-3 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-                Топ приложений
-              </div>
+            <div className="card hidden p-5 sm:block lg:col-span-2">
+              <div className="label mb-3">Топ приложений</div>
               {data.topApps.length === 0 ? (
-                <p className="py-6 text-center text-xs text-zinc-600">Нет данных</p>
+                <p className="py-6 text-center text-xs text-zinc-500">Нет данных</p>
               ) : (
                 <ResponsiveContainer width="100%" height={230}>
                   <PieChart>
@@ -509,27 +507,25 @@ export default function AnalyticsPage() {
                   </PieChart>
                 </ResponsiveContainer>
               )}
-              <p className="mt-2 text-center text-[10px] text-zinc-600">
+              <p className="mt-2 text-center text-[10px] text-zinc-500">
                 клик по сектору — график приложения
               </p>
             </div>
 
-            <div className="rounded-xl border border-zinc-800 bg-surface p-5 lg:col-span-3">
+            <div className="card p-5 lg:col-span-3">
               <div className="mb-3 flex items-center justify-between">
-                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-                  Приложения · {days} дней
-                </span>
+                <span className="label">Приложения · {days} дней</span>
                 {activeApp && (
                   <button
                     onClick={() => setActiveApp(null)}
-                    className="text-[10px] text-zinc-500 transition hover:text-zinc-200"
+                    className="rounded-md px-2 py-1 text-[10px] text-zinc-500 transition hover:text-zinc-200"
                   >
                     ✕ сбросить фильтр
                   </button>
                 )}
               </div>
               {data.topApps.length === 0 ? (
-                <p className="py-6 text-center text-xs text-zinc-600">Нет данных по приложениям</p>
+                <p className="py-6 text-center text-xs text-zinc-500">Нет данных по приложениям</p>
               ) : (
                 <div className="flex flex-col gap-2.5">
                   {data.topApps.slice(0, 8).map((app, i) => {
@@ -608,12 +604,10 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-surface p-4 sm:p-5">
+    <div className="card p-4 sm:p-5">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-          {title}
-        </span>
-        {hint && <span className="text-[10px] text-zinc-600">{hint}</span>}
+        <span className="label">{title}</span>
+        {hint && <span className="text-[10px] text-zinc-500">{hint}</span>}
       </div>
       {children}
     </div>
@@ -632,10 +626,8 @@ function StatCard({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-1.5 rounded-xl border border-zinc-800 bg-surface p-4">
-      <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-        {label}
-      </span>
+    <div className="card flex flex-col gap-1.5 p-4">
+      <span className="label">{label}</span>
       <span
         className={`font-display text-xl font-bold leading-none sm:text-2xl ${
           tone === "good" ? "text-emerald-400" : tone === "bad" ? "text-red-400" : "text-zinc-100"
@@ -666,10 +658,8 @@ function LimitCard({
   const c = 2 * Math.PI * r;
 
   return (
-    <div className="flex flex-col gap-1.5 rounded-xl border border-zinc-800 bg-surface p-4">
-      <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-        Лимит дня
-      </span>
+    <div className="card flex flex-col gap-1.5 p-4">
+      <span className="label">Лимит дня</span>
       <div className="flex items-center gap-3">
         <div className="relative h-16 w-16 flex-shrink-0">
           <svg viewBox="0 0 64 64" className="h-16 w-16 -rotate-90">
@@ -743,9 +733,9 @@ function DayDetail({
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <div className="mb-2 text-[10px] uppercase tracking-wider text-zinc-600">Приложения</div>
+          <div className="mb-2 text-[10px] uppercase tracking-wider text-zinc-500">Приложения</div>
           {entry.apps.length === 0 ? (
-            <p className="text-xs text-zinc-600">Нет данных по приложениям</p>
+            <p className="text-xs text-zinc-500">Нет данных по приложениям</p>
           ) : (
             <div className="flex flex-col gap-1.5">
               {entry.apps.slice(0, 8).map((a) => (
@@ -765,9 +755,9 @@ function DayDetail({
           )}
         </div>
         <div>
-          <div className="mb-2 text-[10px] uppercase tracking-wider text-zinc-600">Устройства</div>
+          <div className="mb-2 text-[10px] uppercase tracking-wider text-zinc-500">Устройства</div>
           {entry.devices.length === 0 ? (
-            <p className="text-xs text-zinc-600">Нет данных по устройствам</p>
+            <p className="text-xs text-zinc-500">Нет данных по устройствам</p>
           ) : (
             <div className="flex flex-col gap-1.5">
               {entry.devices.map((d: DeviceDayStat) => (
@@ -782,7 +772,7 @@ function DayDetail({
             </div>
           )}
           <div className="mt-3">
-            <div className="mb-2 text-[10px] uppercase tracking-wider text-zinc-600">Распределение</div>
+            <div className="mb-2 text-[10px] uppercase tracking-wider text-zinc-500">Распределение</div>
             <div className="flex h-2 w-full overflow-hidden rounded-full bg-zinc-800">
               {entry.apps.slice(0, 8).map((a, i) => (
                 <span
@@ -835,7 +825,7 @@ function HourHeatmap({
             {hourLabels.map((h) => (
               <span
                 key={h}
-                className="font-mono text-[9px] leading-none text-zinc-600"
+                className="font-mono text-[9px] leading-none text-zinc-500"
                 style={{ gridColumn: "span 3 / span 3" }}
               >
                 {String(h).padStart(2, "0")}
@@ -917,7 +907,7 @@ function AppSeriesChart({
         </span>
         <button
           onClick={() => onAppClick(app.name)}
-          className="text-[10px] text-zinc-500 transition hover:text-zinc-200"
+          className="rounded px-1.5 py-1 text-[10px] text-zinc-500 transition hover:text-zinc-200"
         >
           ✕
         </button>
@@ -937,7 +927,7 @@ function AppSeriesChart({
                 opacity: p.seconds > 0 ? 0.8 : 0.12,
               }}
             />
-            <span className="font-mono text-[8.5px] text-zinc-600">
+            <span className="font-mono text-[8.5px] text-zinc-500">
               {p.seconds > 0 ? p.label : "·"}
             </span>
           </div>
