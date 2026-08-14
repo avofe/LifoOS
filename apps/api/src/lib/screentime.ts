@@ -737,6 +737,38 @@ export async function fetchScreenLimits(): Promise<{
   };
 }
 
+export async function fetchYesterday(deviceId?: string): Promise<{
+  totalSec: number;
+  limitMin: number | null;
+  over: boolean;
+  apps: { name: string; color: string; seconds: number }[];
+} | null> {
+  const tz = await getTimezone();
+  await getAppMeta();
+  const now = new Date();
+
+  const yesterdayStart = getDayStart(-1, tz, now);
+  const todayStart = getDayStart(0, tz, now);
+
+  const events = await fetchEventsFromDb(deviceId, yesterdayStart, todayStart);
+  if (events.length === 0) return null;
+
+  const { total, apps } = aggregateDay(events);
+
+  const settings = await prisma.setting.findMany({ where: { userId: USER_ID } });
+  const map: Record<string, any> = {};
+  for (const s of settings) map[s.key] = s.value;
+  const totalLimitMin =
+    typeof map.screenLimitTotal === "number" ? map.screenLimitTotal : null;
+
+  return {
+    totalSec: total,
+    limitMin: totalLimitMin,
+    over: totalLimitMin !== null && total > totalLimitMin * 60,
+    apps: apps.slice(0, 3),
+  };
+}
+
 export async function fetchRawApps(): Promise<{
   apps: { key: string; name: string; seconds: number; time: string; color: string }[];
 }> {

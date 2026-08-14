@@ -1,5 +1,5 @@
 import { TopBar } from "@/components/TopBar";
-import { AiBrief } from "@/components/AiBrief";
+import { DaySummary } from "@/components/home/DaySummary";
 import { RightPanel } from "@/components/RightPanel";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { WeatherWidget } from "@/components/home/WeatherWidget";
@@ -14,8 +14,8 @@ export default function Home() {
     <>
       <main className="flex flex-1 flex-col gap-4 border-r border-zinc-800 p-4 sm:p-6">
         <TopBar />
-        <ErrorBoundary label="AI брифинг">
-          <AiBrief />
+        <ErrorBoundary label="Сводка дня">
+          <DaySummary />
         </ErrorBoundary>
 
         <ErrorBoundary label="Погода">

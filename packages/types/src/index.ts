@@ -284,6 +284,40 @@ export interface StreakStatus {
   bestUpdatedAt: string | null;
 }
 
+/* ── Day Summary ── */
+export interface SummaryYesterday {
+  totalSec: number;
+  limitMin: number | null;
+  over: boolean;
+  apps: { name: string; color: string; seconds: number }[];
+}
+
+export interface SummaryPayment {
+  name: string;
+  amount: string;
+  daysLeft: number;
+}
+
+export interface SummaryStream {
+  displayName: string;
+  game: string | null;
+  viewers: number;
+  title: string | null;
+  uptime: string | null;
+}
+
+export interface DaySummary {
+  yesterday: SummaryYesterday | null;
+  todayTotalSec: number;
+  todayOver: boolean;
+  todayRemainingSec: number | null;
+  forecast: ScreenTimeForecast | null;
+  streak: { streak: number; record: number; enabled: boolean } | null;
+  payments: SummaryPayment[];
+  videos: { id: string; title: string; channel: string; publishedAt: string }[];
+  streams: SummaryStream[];
+}
+
 /* ── Focus ── */
 export interface FocusSessionView {
   id: string;

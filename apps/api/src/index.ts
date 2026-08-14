@@ -18,6 +18,7 @@ import { createSettingsRouter } from "./routes/settings";
 import { devicesRouter } from "./routes/devices";
 import { createNotificationsRouter } from "./routes/notifications";
 import { createFocusRouter } from "./routes/focus";
+import { createSummaryRouter } from "./routes/summary";
 import { weatherRouter } from "./routes/weather";
 import { requireAccessKey } from "./lib/auth";
 import { initGroq, reinitGroq } from "./lib/gemini";
@@ -77,6 +78,7 @@ app.use("/api/settings", createSettingsRouter());
 app.use("/api/devices", devicesRouter());
 app.use("/api/notifications", createNotificationsRouter());
 app.use("/api/focus", createFocusRouter());
+app.use("/api/summary", createSummaryRouter());
 app.use("/api/weather", weatherRouter());
 
 // Serve frontend static files (production)
