@@ -84,10 +84,11 @@ set -e
 cd /opt/lifeos
 git pull origin master
 pnpm install
+pm2 stop lifeos >/dev/null 2>&1 || true
 pnpm --filter @lifeos/types build
 pnpm --filter @lifeos/db db:push
 pnpm --filter @lifeos/api build
-pm2 restart lifeos >/dev/null
+pm2 start lifeos >/dev/null 2>&1 || pm2 restart lifeos >/dev/null
 echo "SERVER_OK"
 "@
 }
