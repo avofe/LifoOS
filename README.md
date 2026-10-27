@@ -1,37 +1,36 @@
 # LifeOS
 
-Персональный AI-дашборд для управления цифровой жизнью. Tauri 2.0 десктоп-приложение с бэкендом на Express + Prisma + PostgreSQL.
+Персональный AI-дашборд для управления цифровой жизнью. Monorepo на базе pnpm с десктоп-приложением на [Tauri 2.0](https://v2.tauri.app/), фронтендом на [Next.js 14](https://nextjs.org/) и бэкендом на [Express](https://expressjs.com/) + [Prisma](https://www.prisma.io/) + [PostgreSQL](https://www.postgresql.org/).
 
 ## Возможности
 
-- **Дашборд + AI-брифинг** — утренняя/вечерняя сводка от Groq AI на основе ваших данных
-- **Подписки** — CRUD, категории, контроль платежей, статусы (overdue / critical / upcoming)
+- **Дашборд** — обзор ключевых показателей и событий
+- **День (/day)** — задачи, привычки, сон
+- **Подписки** — учёт, категории, напоминания и статусы платежей
 - **YouTube** — лента новых видео из отслеживаемых каналов
-- **Twitch** — онлайн/офлайн стримеры, статус в реальном времени
-- **Экранное время** — аналитика через ActivityWatch с разбивкой по дням/неделям, категоризация по приложениям
+- **Twitch** — отслеживание онлайн/офлайн статуса стримеров
+- **Экранное время** — аналитика через [ActivityWatch](https://activitywatch.net/) с разбивкой по приложениям и периодам
 - **Таймлайн** — хронология событий и активности
-- **AI-чат** — естественно-языковые запросы по своим данным (Groq AI, llama-3.3-70b)
 
 ## Технологии
 
 | Компонент | Стек |
 |-----------|------|
-| Desktop Shell | Tauri 2.0 (Rust) |
-| Frontend | Next.js 14 + TypeScript + Tailwind CSS |
-| Backend | Express + Prisma |
+| Десктоп | Tauri 2.0 (Rust) |
+| Фронтенд | Next.js 14, TypeScript, Tailwind CSS |
+| Бэкенд | Express, Prisma |
 | База данных | PostgreSQL 17 |
-| AI | Groq (llama-3.3-70b-versatile) |
+| AI | Groq |
 | Экранное время | ActivityWatch |
-| Погода | wttr.in |
 
 ## Быстрый старт
 
 ### Требования
 
-- Node.js ≥ 20
-- pnpm ≥ 10
-- PostgreSQL 17 (локально)
-- ActivityWatch (для экранного времени)
+- [Node.js](https://nodejs.org/) >= 20
+- [pnpm](https://pnpm.io/) >= 10
+- [PostgreSQL](https://www.postgresql.org/) >= 17
+- [ActivityWatch](https://activitywatch.net/) — опционально, для модуля экранного времени
 
 ### Установка
 
@@ -41,67 +40,72 @@ cd LifeOS
 pnpm install
 ```
 
-### Настройка БД
+### Настройка переменных окружения
 
-Создайте `.env` в `packages/db/`:
+Создайте `.env` файлы по образцу. **Никогда не коммитьте реальные ключи и строки подключения.**
 
+#### `packages/db/.env`
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE_NAME"
 ```
-DATABASE_URL="postgresql://postgres:root@localhost:5432/lifeos"
+
+#### `apps/api/.env`
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE_NAME"
+GROQ_API_KEY="YOUR_GROQ_API_KEY"
 ```
 
-Примените схему:
+### Опциональные переменные
+
+| Переменная | Описание |
+|------------|----------|
+| `YOUTUBE_API_KEY` | Ключ YouTube Data API v3 |
+| `TWITCH_CLIENT_ID` | Client ID Twitch API |
+| `TWITCH_CLIENT_SECRET` | Client Secret Twitch API |
+
+### Инициализация базы данных
 
 ```bash
 pnpm db:push
 ```
 
-### Запуск (dev)
+### Запуск в режиме разработки
 
 ```bash
 pnpm dev
 ```
 
-Откройте http://localhost:4000.
+По умолчанию API доступен по адресу: `http://localhost:4000`
 
-### Переменные окружения
-
-Создайте `.env` в `apps/api/`:
-
-```
-DATABASE_URL="postgresql://postgres:root@localhost:5432/lifeos"
-GROQ_API_KEY="gsk_..."
-```
-
-| Переменная | Описание |
-|------------|----------|
-| `DATABASE_URL` | Строка подключения к PostgreSQL |
-| `GROQ_API_KEY` | API-ключ Groq (бесплатно, 14 400 запросов/день) |
-| `YOUTUBE_API_KEY` | API-ключ YouTube Data v3 (опционально) |
-| `TWITCH_CLIENT_ID` | Twitch Client-ID (опционально) |
-
-## Десктоп-сборка
+### Сборка десктопного приложения
 
 ```bash
 pnpm desktop:build
 ```
 
-NSIS-установщик: `apps/desktop/src-tauri/target/release/bundle/nsis/`
+Готовый установщик будет находиться по пути:  
+`apps/desktop/src-tauri/target/release/bundle/`
 
 ## Структура проекта
 
-```
-lifeos/
+```text
+LifeOS/
 ├── apps/
-│   ├── api/          # Express сервер (маршруты, сервисы)
-│   ├── web/          # Next.js клиент (App Router)
-│   └── desktop/      # Tauri 2.0 обёртка
+│   ├── api/      # Express API
+│   ├── web/      # Next.js веб-клиент
+│   └── desktop/  # Tauri 2.0 десктоп-обёртка
 ├── packages/
-│   ├── db/           # Prisma схема + клиент
-│   └── types/        # Общие TypeScript типы
-├── scripts/          # bundle-api, smoke-test
-└── Plan/             # Документация и архитектура
+│   ├── db/       # Prisma схема и клиент
+│   └── types/      # Общие TypeScript-типы
+└── scripts/      # Вспомогательные скрипты
 ```
+
+## Безопасность
+
+- Все секреты должны храниться только в `.env` файлах. Убедитесь, что они добавлены в `.gitignore`.
+- Перед публикацией репозитория проверьте отсутствие `.env`, дампов БД, логов с токенами и приватных ключей.
+- Используйте отдельные API-ключи для разработки и продакшена.
 
 ## Лицензия
 
-MIT
+[MIT](LICENSE)
